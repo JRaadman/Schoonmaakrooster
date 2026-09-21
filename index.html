@@ -15,28 +15,35 @@
 html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#eef8f5;color:#173d36}
 main{min-height:100%;display:grid;place-items:center;padding:28px;box-sizing:border-box;text-align:center}
 .card{width:min(390px,100%);background:#fff;border-radius:24px;padding:30px 24px;box-sizing:border-box;box-shadow:0 10px 35px rgba(0,0,0,.12)}
-img{width:120px;height:120px;border-radius:25px}
-h1{margin:18px 0 7px;font-size:27px}
-p{line-height:1.45;color:#58716c;margin:0 0 20px}
-button,a{width:100%;box-sizing:border-box;border:0;border-radius:14px;padding:15px 18px;font-size:17px;font-weight:800;background:#226b5f;color:white;text-decoration:none;display:block}
-.small{font-size:13px;margin-top:16px;color:#71837f}
+img{width:120px;height:120px;border-radius:25px}h1{margin:18px 0 7px;font-size:27px}p{line-height:1.45;color:#58716c;margin:0 0 20px}
+a{width:100%;box-sizing:border-box;border:0;border-radius:14px;padding:15px 18px;font-size:17px;font-weight:800;background:#226b5f;color:#fff;text-decoration:none;display:block}.small{font-size:13px;margin-top:16px;color:#71837f}
 </style>
 </head>
 <body>
 <main><section class="card">
 <img src="app_icon_192.png" alt="Capfun Het Winkel">
 <h1>Schoonmaakrooster</h1>
-<p id="instruction">Voeg deze pagina eerst toe aan je beginscherm. Open daarna het nieuwe Capfun-icoon.</p>
-<a id="open" href="https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec">Rooster openen</a>
+<p id="instruction">Voeg deze pagina toe aan je beginscherm. Daarna opent het Capfun-icoon rechtstreeks jouw gekoppelde rooster.</p>
+<a id="open" href="#">Rooster openen</a>
 <div class="small">Capfun Het Winkel</div>
 </section></main>
 <script>
 (function(){
- const target='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
+ const base='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
+ const params=new URLSearchParams(location.search);
+ const incoming=params.get('device')||'';
+ if(incoming){
+   try{localStorage.setItem('schoonmaak_device',incoming);}catch(e){}
+   history.replaceState({},'',location.pathname);
+ }
+ let token='';
+ try{token=localStorage.getItem('schoonmaak_device')||'';}catch(e){}
+ const target=token ? base+'?device='+encodeURIComponent(token) : base;
+ document.getElementById('open').href=target;
  const standalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
  if(standalone){
-   document.getElementById('instruction').textContent='Rooster wordt geopend...';
-   setTimeout(function(){window.location.replace(target);},250);
+   document.getElementById('instruction').textContent=token?'Gekoppeld rooster wordt geopend...':'Rooster wordt geopend...';
+   setTimeout(function(){location.replace(target);},250);
  }
 })();
 </script>
