@@ -12,39 +12,165 @@
 <link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png">
 <title>Schoonmaakrooster</title>
 <style>
-html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#eef8f5;color:#173d36}
-main{min-height:100%;display:grid;place-items:center;padding:28px;box-sizing:border-box;text-align:center}
-.card{width:min(390px,100%);background:#fff;border-radius:24px;padding:30px 24px;box-sizing:border-box;box-shadow:0 10px 35px rgba(0,0,0,.12)}
-img{width:120px;height:120px;border-radius:25px}h1{margin:18px 0 7px;font-size:27px}p{line-height:1.45;color:#58716c;margin:0 0 20px}
-a{width:100%;box-sizing:border-box;border:0;border-radius:14px;padding:15px 18px;font-size:17px;font-weight:800;background:#226b5f;color:#fff;text-decoration:none;display:block}.small{font-size:13px;margin-top:16px;color:#71837f}
+:root{
+  --green:#226b5f;
+  --bg:#eef8f5;
+  --text:#173d36;
+  --muted:#667c77;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}
+body.app-mode{overflow:hidden}
+#installScreen{
+  min-height:100%;
+  display:grid;
+  place-items:center;
+  padding:28px;
+  text-align:center;
+}
+.card{
+  width:min(390px,100%);
+  background:#fff;
+  border-radius:24px;
+  padding:30px 24px;
+  box-shadow:0 10px 35px rgba(0,0,0,.12);
+}
+.logo{width:120px;height:120px;border-radius:25px}
+h1{margin:18px 0 7px;font-size:27px}
+p{line-height:1.45;color:#58716c;margin:0 0 20px}
+button{
+  width:100%;
+  border:0;
+  border-radius:14px;
+  padding:16px 18px;
+  min-height:54px;
+  font-size:17px;
+  font-weight:800;
+  background:var(--green);
+  color:#fff;
+  touch-action:manipulation;
+}
+.small{font-size:13px;margin-top:16px;color:#71837f}
+#appShell{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#fff;
+}
+#appFrame{
+  width:100%;
+  height:100%;
+  border:0;
+  display:block;
+  background:#fff;
+}
+#loading{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:var(--bg);
+  z-index:2;
+  padding:24px;
+}
+.loaderCard{
+  background:#fff;
+  border-radius:20px;
+  padding:22px 24px;
+  box-shadow:0 8px 28px rgba(0,0,0,.10);
+  text-align:center;
+  font-weight:800;
+  color:var(--text);
+}
+.spinner{
+  width:34px;height:34px;
+  margin:0 auto 12px;
+  border:4px solid #d8e9e4;
+  border-top-color:var(--green);
+  border-radius:50%;
+  animation:spin .75s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<main><section class="card">
-<img src="app_icon_192.png" alt="Capfun Het Winkel">
-<h1>Schoonmaakrooster</h1>
-<p id="instruction">Voeg deze pagina toe aan je beginscherm. Daarna opent het Capfun-icoon rechtstreeks jouw gekoppelde rooster.</p>
-<a id="open" href="#">Rooster openen</a>
-<div class="small">Capfun Het Winkel</div>
-</section></main>
+
+<main id="installScreen">
+  <section class="card">
+    <img class="logo" src="app_icon_192.png" alt="Capfun Het Winkel">
+    <h1>Schoonmaakrooster</h1>
+    <p id="instruction">
+      Voeg deze pagina toe aan je beginscherm. Daarna opent het rooster als app, zonder dat je naar script.google.com wordt doorgestuurd.
+    </p>
+    <button id="openBtn" type="button">Rooster openen</button>
+    <div class="small">Capfun Het Winkel</div>
+  </section>
+</main>
+
+<section id="appShell" aria-label="Schoonmaakrooster app">
+  <div id="loading">
+    <div class="loaderCard">
+      <div class="spinner"></div>
+      Schoonmaakrooster openen…
+    </div>
+  </div>
+  <iframe
+    id="appFrame"
+    title="Schoonmaakrooster"
+    allow="geolocation; camera; microphone; clipboard-read; clipboard-write"
+    referrerpolicy="no-referrer-when-downgrade">
+  </iframe>
+</section>
+
 <script>
 (function(){
- const base='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
- const params=new URLSearchParams(location.search);
- const incoming=params.get('device')||'';
- if(incoming){
-   try{localStorage.setItem('schoonmaak_device',incoming);}catch(e){}
-   history.replaceState({},'',location.pathname);
- }
- let token='';
- try{token=localStorage.getItem('schoonmaak_device')||'';}catch(e){}
- const target=token ? base+'?device='+encodeURIComponent(token) : base;
- document.getElementById('open').href=target;
- const standalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
- if(standalone){
-   document.getElementById('instruction').textContent=token?'Gekoppeld rooster wordt geopend...':'Rooster wordt geopend...';
-   setTimeout(function(){location.replace(target);},250);
- }
+  const BASE = 'https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
+
+  const params = new URLSearchParams(location.search);
+  const incoming = params.get('device') || '';
+
+  if (incoming) {
+    try { localStorage.setItem('schoonmaak_device', incoming); } catch(e) {}
+    history.replaceState({}, '', location.pathname);
+  }
+
+  function getToken(){
+    try { return localStorage.getItem('schoonmaak_device') || ''; }
+    catch(e) { return ''; }
+  }
+
+  function targetUrl(){
+    const token = getToken();
+    return token ? BASE + '?device=' + encodeURIComponent(token) : BASE;
+  }
+
+  function showApp(){
+    document.body.classList.add('app-mode');
+    document.getElementById('installScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'block';
+
+    const frame = document.getElementById('appFrame');
+    const loading = document.getElementById('loading');
+
+    frame.addEventListener('load', function(){
+      setTimeout(function(){
+        loading.style.display = 'none';
+      }, 250);
+    }, {once:true});
+
+    frame.src = targetUrl();
+  }
+
+  document.getElementById('openBtn').addEventListener('click', showApp);
+
+  const standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  if (standalone) {
+    showApp();
+  }
 })();
 </script>
-</body></html>
+</body>
+</html>
