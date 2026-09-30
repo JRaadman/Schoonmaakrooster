@@ -86,6 +86,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
+  const APP_IFRAME_BUILD='20260930-2305-v65';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -183,7 +184,7 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function getToken(){return getStored('schoonmaak_device');}
-  function targetUrl(){const token=getToken();return token?BASE+'?device='+encodeURIComponent(token):BASE;}
+  function targetUrl(){const token=getToken();const join=token?'?device='+encodeURIComponent(token)+'&':'?';return BASE+join+'launcherBuild='+encodeURIComponent(APP_IFRAME_BUILD);}
   function greetingFor(name){
     const h=new Date().getHours();
     const part=h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond';
@@ -251,9 +252,24 @@ body{overflow:hidden}
     },wait);
   }
 
+  function showLauncherError(message){
+    const text=String(message||'Het rooster kon niet worden geladen.');
+    const target=loadingLine.querySelector('span:last-child');
+    if(target)target.textContent='⚠️ '+text;
+    openBtn.style.display='block';
+    openBtn.textContent='Opnieuw proberen';
+    openBtn.onclick=function(){location.reload();};
+  }
+
   window.addEventListener('message',function(e){
     const data=e.data||{};
-    if(data.type==='SCHOONMAAK_READY')revealApp(String(data.name||''));
+    if(data.type==='SCHOONMAAK_READY'){
+      revealApp(String(data.name||''));
+      return;
+    }
+    if(data.type==='SCHOONMAAK_ERROR'){
+      showLauncherError(data.message||'Het rooster kon niet worden geladen.');
+    }
   });
 
   const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
