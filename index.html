@@ -139,6 +139,11 @@ body{overflow:hidden}
     openBtn.style.display='none';
     loadingLine.style.display='flex';
     frame.src=targetUrl();
+    frame.addEventListener('load',function(){
+      setTimeout(function(){
+        if(!frame.classList.contains('ready')) revealApp('');
+      },60000);
+    },{once:true});
     setTimeout(function(){
       if(!frame.classList.contains('ready')){
         loadingLine.querySelector('span:last-child').textContent='Nog heel even, het rooster wordt geladen…';
