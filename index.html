@@ -225,14 +225,19 @@ body{overflow:hidden}
     // AFTER the iframe load event, which could make the splash stay visible
     // for roughly a minute even though Apps Script itself was already ready.
     setTimeout(function(){
-      if(!frame.classList.contains('ready')) revealApp('');
-    },15000);
-
-    setTimeout(function(){
       if(!frame.classList.contains('ready')){
         loadingLine.querySelector('span:last-child').textContent='Nog heel even, het rooster wordt geladen…';
       }
     },10000);
+
+    // Niet meer automatisch na 15 seconden het iframe tonen.
+    // Het rooster wordt pas zichtbaar zodra de Apps Script-app zelf SCHOONMAAK_READY meldt.
+    // Zo krijgt de gebruiker nooit meer een half geladen scherm te zien.
+    setTimeout(function(){
+      if(!frame.classList.contains('ready')){
+        loadingLine.querySelector('span:last-child').textContent='Het rooster maakt nog verbinding…';
+      }
+    },20000);
   }
 
   function revealApp(name){
