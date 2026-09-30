@@ -24,7 +24,12 @@ body{overflow:hidden}
 .card{width:min(410px,100%);background:rgba(255,255,255,.56);backdrop-filter:blur(1.7px);-webkit-backdrop-filter:blur(1.7px);border:1px solid rgba(255,255,255,.64);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.14)}
 .logo{width:98px;height:98px;border-radius:23px;box-shadow:0 7px 20px rgba(0,0,0,.10)}
 .greeting{font-size:29px;font-weight:950;letter-spacing:-.4px;margin:18px 0 5px}
-.wish{font-size:16px;line-height:1.45;color:var(--muted);font-weight:650;margin:0 auto 18px;max-width:310px}
+.wish{font-size:16px;line-height:1.45;color:var(--muted);font-weight:650;margin:0 auto 14px;max-width:310px}
+.language-chooser{margin:0 0 16px}
+.language-title{font-size:11px;font-weight:900;letter-spacing:.35px;color:#6d817c;margin-bottom:8px}
+.language-buttons{display:flex;justify-content:center;gap:8px}
+.language-btn{min-width:58px;border:1px solid rgba(34,107,95,.22);background:rgba(255,255,255,.62);color:var(--green);border-radius:999px;padding:9px 13px;font-size:13px;font-weight:950;box-shadow:0 2px 8px rgba(18,67,58,.06)}
+.language-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
 .riddle{background:rgba(245,250,248,.78);border:1px solid rgba(222,235,231,.90);border-radius:18px;padding:15px 16px;text-align:left;margin:0 0 16px}
 .riddle-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--green);margin-bottom:6px}
 .riddle-q{font-size:15px;line-height:1.4;font-weight:750;color:#244b44}
@@ -57,7 +62,15 @@ body{overflow:hidden}
   <section class="card">
     <img class="logo" src="app_icon_192.png" alt="Capfun Het Winkel">
     <div class="greeting" id="greeting">Goedemorgen!</div>
-    <div class="wish">Wij wensen jou een fijne werkdag toe!</div>
+    <div class="wish" id="wish">Wij wensen jou een fijne werkdag toe!</div>
+    <div class="language-chooser" id="languageChooser">
+      <div class="language-title">Kies taal · Choose language · Elige idioma</div>
+      <div class="language-buttons">
+        <button class="language-btn" type="button" data-lang="nl">NL</button>
+        <button class="language-btn" type="button" data-lang="en">EN</button>
+        <button class="language-btn" type="button" data-lang="es">SP</button>
+      </div>
+    </div>
     <div class="riddle">
       <div class="riddle-title">Raadsel van de dag</div>
       <div class="riddle-q" id="riddleQ"></div>
@@ -86,7 +99,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20260930-2340-v67';
+  const APP_IFRAME_BUILD='20260930-2355-v68';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -184,29 +197,79 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function getToken(){return getStored('schoonmaak_device');}
-  function targetUrl(){const token=getToken();const join=token?'?device='+encodeURIComponent(token)+'&':'?';return BASE+join+'launcherBuild='+encodeURIComponent(APP_IFRAME_BUILD);}
+  function normalizeLang(lang){lang=String(lang||'').toLowerCase();return ['nl','en','es'].includes(lang)?lang:'';}
+  function getAppLang(){return normalizeLang(getStored('schoonmaak_lang'));}
+  function setAppLang(lang){lang=normalizeLang(lang)||'nl';setStored('schoonmaak_lang',lang);return lang;}
+  function targetUrl(){
+    const token=getToken();
+    const lang=getAppLang()||'nl';
+    const params=[];
+    if(token)params.push('device='+encodeURIComponent(token));
+    params.push('lang='+encodeURIComponent(lang));
+    params.push('launcherBuild='+encodeURIComponent(APP_IFRAME_BUILD));
+    return BASE+'?'+params.join('&');
+  }
   function greetingFor(name){
+    const lang=getAppLang()||'nl';
     const h=new Date().getHours();
-    const part=h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond';
+    const parts={
+      nl:h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond',
+      en:h<12?'Good morning':h<18?'Good afternoon':'Good evening',
+      es:h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches'
+    };
+    const part=parts[lang]||parts.nl;
     return name?part+' '+name+'!':part+'!';
   }
   function dayOfYear(d){const start=new Date(d.getFullYear(),0,0);return Math.floor((d-start)/86400000);}
+  function applyLauncherLanguage(){
+    const lang=getAppLang()||'nl';
+    const text={
+      nl:{wish:'Wij wensen jou een fijne werkdag toe!',riddle:'Raadsel van de dag',answer:'Toon antwoord',hide:'Verberg antwoord',answerPrefix:'Antwoord: ',statement:'Stelling van de dag',loading:'Rooster wordt klaargezet…',later:'Nog heel even, het rooster wordt geladen…',connecting:'Het rooster maakt nog verbinding…',open:'Rooster openen',retry:'Opnieuw proberen'},
+      en:{wish:'We wish you a pleasant working day!',riddle:'Riddle of the day',answer:'Show answer',hide:'Hide answer',answerPrefix:'Answer: ',statement:'Statement of the day',loading:'Preparing the schedule…',later:'Just a moment, the schedule is loading…',connecting:'The schedule is still connecting…',open:'Open schedule',retry:'Try again'},
+      es:{wish:'¡Que tengas una buena jornada de trabajo!',riddle:'Acertijo del día',answer:'Mostrar respuesta',hide:'Ocultar respuesta',answerPrefix:'Respuesta: ',statement:'Frase del día',loading:'Preparando el horario…',later:'Un momento, el horario se está cargando…',connecting:'El horario sigue conectando…',open:'Abrir horario',retry:'Intentar de nuevo'}
+    }[lang];
+    document.documentElement.lang=lang;
+    document.getElementById('wish').textContent=text.wish;
+    document.querySelector('.riddle-title').textContent=text.riddle;
+    document.querySelector('.statement-title').textContent=text.statement;
+    document.getElementById('answerBtn').textContent=text.answer;
+    document.getElementById('openBtn').textContent=text.open;
+    document.querySelectorAll('.language-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.lang===lang));
+  }
   function setPersonalSplash(name){
+    const lang=getAppLang()||'nl';
     document.getElementById('greeting').textContent=greetingFor(name||getStored('schoonmaak_name'));
     const day=dayOfYear(new Date());
     applyDailyBackground(day);
     const r=riddles[day%riddles.length];
+    const prefix=lang==='en'?'Answer: ':lang==='es'?'Respuesta: ':'Antwoord: ';
     document.getElementById('riddleQ').textContent=r[0];
-    document.getElementById('riddleA').textContent='Antwoord: '+r[1];
+    document.getElementById('riddleA').textContent=prefix+r[1];
     document.getElementById('statementText').textContent=statements[day%statements.length];
+    applyLauncherLanguage();
   }
 
   setPersonalSplash('');
   document.getElementById('answerBtn').addEventListener('click',function(){
     const a=document.getElementById('riddleA');
     a.classList.toggle('show');
-    this.textContent=a.classList.contains('show')?'Verberg antwoord':'Toon antwoord';
+    const lang=getAppLang()||'nl';
+    const show=lang==='en'?'Show answer':lang==='es'?'Mostrar respuesta':'Toon antwoord';
+    const hide=lang==='en'?'Hide answer':lang==='es'?'Ocultar respuesta':'Verberg antwoord';
+    this.textContent=a.classList.contains('show')?hide:show;
   });
+
+  document.querySelectorAll('.language-btn').forEach(btn=>btn.addEventListener('click',function(){
+    const previous=getAppLang();
+    const next=setAppLang(this.dataset.lang);
+    applyLauncherLanguage();
+    setPersonalSplash('');
+    if(started && previous && previous!==next){
+      location.reload();
+      return;
+    }
+    if(!started)startAppLoad();
+  }));
 
   const frame=document.getElementById('appFrame');
   const splash=document.getElementById('splash');
@@ -227,7 +290,8 @@ body{overflow:hidden}
     // for roughly a minute even though Apps Script itself was already ready.
     setTimeout(function(){
       if(!frame.classList.contains('ready')){
-        loadingLine.querySelector('span:last-child').textContent='Nog heel even, het rooster wordt geladen…';
+        const lang=getAppLang()||'nl';
+        loadingLine.querySelector('span:last-child').textContent=lang==='en'?'Just a moment, the schedule is loading…':lang==='es'?'Un momento, el horario se está cargando…':'Nog heel even, het rooster wordt geladen…';
       }
     },10000);
 
@@ -236,7 +300,8 @@ body{overflow:hidden}
     // Zo krijgt de gebruiker nooit meer een half geladen scherm te zien.
     setTimeout(function(){
       if(!frame.classList.contains('ready')){
-        loadingLine.querySelector('span:last-child').textContent='Het rooster maakt nog verbinding…';
+        const lang=getAppLang()||'nl';
+        loadingLine.querySelector('span:last-child').textContent=lang==='en'?'The schedule is still connecting…':lang==='es'?'El horario sigue conectando…':'Het rooster maakt nog verbinding…';
       }
     },20000);
   }
@@ -253,11 +318,13 @@ body{overflow:hidden}
   }
 
   function showLauncherError(message){
-    const text=String(message||'Het rooster kon niet worden geladen.');
+    const lang=getAppLang()||'nl';
+    const fallback=lang==='en'?'The schedule could not be loaded.':lang==='es'?'No se pudo cargar el horario.':'Het rooster kon niet worden geladen.';
+    const text=String(message||fallback);
     const target=loadingLine.querySelector('span:last-child');
     if(target)target.textContent='⚠️ '+text;
     openBtn.style.display='block';
-    openBtn.textContent='Opnieuw proberen';
+    openBtn.textContent=(getAppLang()==='en'?'Try again':getAppLang()==='es'?'Intentar de nuevo':'Opnieuw proberen');
     openBtn.onclick=function(){location.reload();};
   }
 
@@ -273,12 +340,20 @@ body{overflow:hidden}
   });
 
   const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
-  if(standalone){
-    startAppLoad();
+  const savedLang=getAppLang();
+  if(savedLang){
+    applyLauncherLanguage();
+    if(standalone){
+      startAppLoad();
+    }else{
+      loadingLine.style.display='none';
+      openBtn.style.display='block';
+      openBtn.addEventListener('click',startAppLoad);
+    }
   }else{
+    // Eerste keer: kies eerst NL / EN / SP. Pas daarna wordt Apps Script gestart.
     loadingLine.style.display='none';
-    openBtn.style.display='block';
-    openBtn.addEventListener('click',startAppLoad);
+    openBtn.style.display='none';
   }
 })();
 </script>
