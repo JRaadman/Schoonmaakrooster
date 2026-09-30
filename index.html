@@ -213,7 +213,7 @@ body{overflow:hidden}
     frame.addEventListener('load',function(){
       setTimeout(function(){
         if(!frame.classList.contains('ready')) revealApp('');
-      },60000);
+      },20000);
     },{once:true});
     setTimeout(function(){
       if(!frame.classList.contains('ready')){
@@ -234,7 +234,6 @@ body{overflow:hidden}
   }
 
   window.addEventListener('message',function(e){
-    if(e.source!==frame.contentWindow)return;
     const data=e.data||{};
     if(data.type==='SCHOONMAAK_READY')revealApp(String(data.name||''));
   });
