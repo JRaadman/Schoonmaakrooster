@@ -78,6 +78,13 @@ body{overflow:hidden}
 </section>
 <script>
 (function(){
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    });
+  }
+
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
