@@ -16,9 +16,9 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}
 body{overflow:hidden}
-#splash{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:linear-gradient(180deg,#eef8f5 0%,#f7fbfa 100%);transition:opacity .28s ease}
+#splash{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:linear-gradient(180deg,#eef8f5 0%,#f7fbfa 100%);background-size:cover;background-position:center;background-repeat:no-repeat;transition:opacity .28s ease}
 #splash.hide{opacity:0;pointer-events:none}
-.card{width:min(410px,100%);background:#fff;border:1px solid var(--line);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.13)}
+.card{width:min(410px,100%);background:rgba(255,255,255,.94);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:1px solid rgba(220,232,228,.95);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.13)}
 .logo{width:98px;height:98px;border-radius:23px;box-shadow:0 7px 20px rgba(0,0,0,.10)}
 .greeting{font-size:29px;font-weight:950;letter-spacing:-.4px;margin:18px 0 5px}
 .wish{font-size:16px;line-height:1.45;color:var(--muted);font-weight:650;margin:0 auto 18px;max-width:310px}
@@ -143,6 +143,26 @@ body{overflow:hidden}
     'Klaar is pas echt klaar als je er zelf tevreden over bent.'
   ];
 
+  const backgroundSvgs=[
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#edf7f3"/><circle cx="72" cy="112" r="42" fill="#f5d66d" opacity=".55"/><path d="M0 670 Q90 610 190 665 T390 640 V844 H0Z" fill="#d7eadb"/><path d="M0 710 Q110 655 215 715 T390 690 V844 H0Z" fill="#c5ddca"/><g opacity=".48"><path d="M250 245h108v105H250z" fill="#d9c2a4"/><path d="M236 245l68-58 69 58z" fill="#8fa58f"/><rect x="280" y="285" width="38" height="65" rx="3" fill="#b4d0d6"/></g><g fill="#9fbea7" opacity=".65"><path d="M40 620l35-105 35 105z"/><path d="M85 635l28-88 28 88z"/><path d="M315 610l32-96 32 96z"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#fff8e8"/><circle cx="320" cy="110" r="56" fill="#ffd98b" opacity=".38"/><g stroke="#b29b7c" stroke-width="2" opacity=".45"><path d="M0 120 Q130 80 390 130" fill="none"/></g><g fill="#ffc75c" opacity=".65"><circle cx="58" cy="105" r="8"/><circle cx="145" cy="94" r="8"/><circle cx="235" cy="100" r="8"/><circle cx="330" cy="120" r="8"/></g><path d="M0 650 Q110 590 205 645 T390 620V844H0Z" fill="#e5edd4"/><g opacity=".42"><rect x="242" y="285" width="112" height="115" rx="4" fill="#c9ad86"/><path d="M230 288l68-55 69 55z" fill="#9e835f"/></g><g fill="#b9d2ad" opacity=".55"><circle cx="40" cy="620" r="65"/><circle cx="350" cy="590" r="80"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#eef8f6"/><circle cx="82" cy="122" r="44" fill="#f6db78" opacity=".52"/><g opacity=".42"><rect x="235" y="250" width="115" height="108" fill="#d7c2a2"/><path d="M220 252l72-56 75 56z" fill="#8ca08f"/><rect x="274" y="292" width="38" height="66" fill="#b8d4d9"/></g><g transform="translate(290 85) rotate(18)" opacity=".32"><rect x="20" y="0" width="14" height="190" rx="7" fill="#836953"/><path d="M0 180h55l-8 70H9z" fill="#e8c65e"/></g><path d="M0 690 Q100 620 210 690 T390 655V844H0Z" fill="#d2e7d6"/><g fill="#98baa1" opacity=".5"><path d="M20 640l38-118 38 118z"/><path d="M98 650l30-95 30 95z"/><path d="M318 645l35-108 35 108z"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#eff7fb"/><circle cx="300" cy="115" r="46" fill="#ffe6a6" opacity=".45"/><path d="M0 610 Q85 550 170 600 T390 590V844H0Z" fill="#d9ead8"/><ellipse cx="175" cy="665" rx="145" ry="78" fill="#bedde4" opacity=".7"/><path d="M115 638 Q175 610 235 640" stroke="#fff" stroke-width="7" opacity=".7" fill="none"/><g opacity=".4"><rect x="28" y="310" width="118" height="92" fill="#d8c0a1"/><path d="M16 312l71-54 73 54z" fill="#8e9d83"/></g><g fill="#9dbca2" opacity=".55"><circle cx="330" cy="580" r="60"/><circle cx="50" cy="590" r="50"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#fff9f1"/><circle cx="330" cy="105" r="50" fill="#ffd89f" opacity=".4"/><path d="M0 675 Q120 610 205 670 T390 650V844H0Z" fill="#ddebd4"/><g opacity=".45"><rect x="225" y="275" width="125" height="110" fill="#dac6a9"/><path d="M213 276l76-60 75 60z" fill="#9b876c"/></g><g opacity=".65"><circle cx="55" cy="610" r="42" fill="#c9ddb5"/><circle cx="95" cy="638" r="50" fill="#d8e7c6"/><circle cx="345" cy="600" r="55" fill="#c5dbb1"/></g><g fill="#f0c7c7" opacity=".7"><circle cx="28" cy="690" r="8"/><circle cx="58" cy="716" r="9"/><circle cx="92" cy="682" r="7"/><circle cx="330" cy="710" r="9"/><circle cx="356" cy="675" r="7"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#eaf4f1"/><stop offset="1" stop-color="#f7fbfa"/></linearGradient></defs><rect width="390" height="844" fill="url(#g)"/><g fill="#afcabc" opacity=".38"><path d="M0 605l55-170 55 170z"/><path d="M75 620l50-155 50 155z"/><path d="M245 610l52-165 52 165z"/><path d="M310 625l45-145 45 145z"/></g><ellipse cx="195" cy="610" rx="185" ry="70" fill="#fff" opacity=".28"/><path d="M0 710 Q120 655 220 712 T390 690V844H0Z" fill="#dce8df"/></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#f7f2ea"/><circle cx="75" cy="110" r="48" fill="#eecb7b" opacity=".35"/><path d="M0 650 Q100 600 205 650 T390 630V844H0Z" fill="#e8dfcc"/><g opacity=".48"><rect x="238" y="270" width="110" height="105" fill="#cdb79a"/><path d="M224 272l70-55 68 55z" fill="#8d7966"/></g><g opacity=".55"><circle cx="35" cy="580" r="60" fill="#c88e68"/><circle cx="95" cy="610" r="55" fill="#d6a26f"/><circle cx="338" cy="585" r="65" fill="#b87d61"/></g><g fill="#a57a58" opacity=".45"><path d="M20 525l35-85 35 85z"/><path d="M300 530l40-95 40 95z"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#f1f8f5"/><circle cx="310" cy="100" r="45" fill="#f6da75" opacity=".44"/><path d="M0 690 Q110 625 210 685 T390 655V844H0Z" fill="#d5e8d7"/><g opacity=".43"><path d="M60 360h155v78H60z" fill="#d8c5a9"/><path d="M48 362l90-58 92 58z" fill="#8f9d83"/><rect x="260" y="350" width="86" height="58" rx="15" fill="#e7efe9" stroke="#9fb6aa" stroke-width="3"/><circle cx="280" cy="410" r="13" fill="#899f92"/><circle cx="329" cy="410" r="13" fill="#899f92"/></g><g fill="#9ebca5" opacity=".5"><circle cx="50" cy="610" r="50"/><circle cx="335" cy="590" r="70"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#eef7f7"/><circle cx="80" cy="115" r="45" fill="#f8dc7b" opacity=".42"/><path d="M0 680 Q110 620 215 680 T390 655V844H0Z" fill="#d9eadc"/><g opacity=".44"><rect x="235" y="270" width="115" height="112" fill="#d7c3a3"/><path d="M222 272l72-56 72 56z" fill="#8d9c83"/></g><g fill="none" stroke="#82aaa4" stroke-width="8" opacity=".38"><path d="M20 740 Q80 680 140 742 T260 740 T390 720"/></g><g fill="#9fbea5" opacity=".5"><path d="M18 620l35-105 35 105z"/><path d="M318 625l38-115 38 115z"/></g></svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><defs><linearGradient id="n" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e7eff6"/><stop offset="1" stop-color="#eef7f3"/></linearGradient></defs><rect width="390" height="844" fill="url(#n)"/><circle cx="305" cy="110" r="34" fill="#f5edc8" opacity=".35"/><g fill="#89a29a" opacity=".35"><path d="M0 630l48-145 48 145z"/><path d="M70 640l40-125 40 125z"/><path d="M250 630l48-150 48 150z"/><path d="M320 640l42-130 42 130z"/></g><g opacity=".32"><rect x="125" y="320" width="140" height="100" fill="#c9b49b"/><path d="M110 322l85-63 84 63z" fill="#7f8f84"/><rect x="170" y="352" width="48" height="68" fill="#a9c3cb"/></g><circle cx="55" cy="160" r="3" fill="#fff" opacity=".8"/><circle cx="105" cy="220" r="2" fill="#fff" opacity=".7"/><circle cx="335" cy="210" r="3" fill="#fff" opacity=".75"/></svg>`
+  ];
+
+  function applyDailyBackground(day){
+    const svg=backgroundSvgs[day%backgroundSvgs.length];
+    const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
+    const splash=document.getElementById('splash');
+    splash.style.backgroundImage='linear-gradient(rgba(244,250,248,.44),rgba(250,252,251,.50)),url("'+url+'")';
+  }
+
   const params=new URLSearchParams(location.search);
   const incoming=params.get('device')||'';
   if(incoming){
@@ -163,6 +183,7 @@ body{overflow:hidden}
   function setPersonalSplash(name){
     document.getElementById('greeting').textContent=greetingFor(name||getStored('schoonmaak_name'));
     const day=dayOfYear(new Date());
+    applyDailyBackground(day);
     const r=riddles[day%riddles.length];
     document.getElementById('riddleQ').textContent=r[0];
     document.getElementById('riddleA').textContent='Antwoord: '+r[1];
