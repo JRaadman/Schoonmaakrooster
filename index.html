@@ -48,8 +48,8 @@ body{overflow:hidden}
 .primary{display:none;width:100%;margin-top:12px;border:0;border-radius:15px;padding:16px 18px;min-height:54px;font-size:17px;font-weight:900;background:var(--green);color:#fff;touch-action:manipulation}
 .small{font-size:12px;margin-top:13px;color:#83948f}
 #appShell{position:fixed;inset:0;z-index:1;background:#fff}
-#appFrame{width:100%;height:100%;border:0;display:block;background:#fff;opacity:0;pointer-events:none;transition:opacity .18s ease}
-#appFrame.ready{opacity:1;pointer-events:auto}
+#appFrame{width:100%;height:100%;border:0;display:block;background:#fff;opacity:1;visibility:visible;pointer-events:none}
+#appFrame.ready{pointer-events:auto}
 </style>
 </head>
 <body>
@@ -74,7 +74,7 @@ body{overflow:hidden}
   </section>
 </main>
 <section id="appShell" aria-label="Schoonmaakrooster app">
-  <iframe id="appFrame" title="Schoonmaakrooster" allow="geolocation; camera; microphone; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  <iframe id="appFrame" title="Schoonmaakrooster" loading="eager" allow="geolocation; camera; microphone; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
 </section>
 <script>
 (function(){
@@ -86,7 +86,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20260930-2325-v66';
+  const APP_IFRAME_BUILD='20260930-2340-v67';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
