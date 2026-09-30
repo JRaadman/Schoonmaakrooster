@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#226b5f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -18,17 +21,17 @@ html,body{height:100%;margin:0;background:var(--bg);font-family:-apple-system,Bl
 body{overflow:hidden}
 #splash{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:linear-gradient(180deg,#eef8f5 0%,#f7fbfa 100%);background-size:cover;background-position:center;background-repeat:no-repeat;transition:opacity .28s ease}
 #splash.hide{opacity:0;pointer-events:none}
-.card{width:min(410px,100%);background:rgba(255,255,255,.80);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);border:1px solid rgba(255,255,255,.72);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.14)}
+.card{width:min(410px,100%);background:rgba(255,255,255,.62);backdrop-filter:blur(2.5px);-webkit-backdrop-filter:blur(2.5px);border:1px solid rgba(255,255,255,.78);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.16)}
 .logo{width:98px;height:98px;border-radius:23px;box-shadow:0 7px 20px rgba(0,0,0,.10)}
 .greeting{font-size:29px;font-weight:950;letter-spacing:-.4px;margin:18px 0 5px}
 .wish{font-size:16px;line-height:1.45;color:var(--muted);font-weight:650;margin:0 auto 18px;max-width:310px}
-.riddle{background:#f5faf8;border:1px solid #deebe7;border-radius:18px;padding:15px 16px;text-align:left;margin:0 0 16px}
+.riddle{background:rgba(245,250,248,.78);border:1px solid rgba(222,235,231,.90);border-radius:18px;padding:15px 16px;text-align:left;margin:0 0 16px}
 .riddle-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--green);margin-bottom:6px}
 .riddle-q{font-size:15px;line-height:1.4;font-weight:750;color:#244b44}
 .riddle-answer{display:none;margin-top:8px;font-size:14px;color:#54716a;font-weight:700}
 .riddle-answer.show{display:block}
 .answer-btn{margin-top:9px;border:0;background:transparent;color:var(--green);font-size:13px;font-weight:900;padding:3px 0;touch-action:manipulation}
-.statement{background:#fff8e8;border:1px solid #f1dfad;border-radius:18px;padding:13px 16px;text-align:left;margin:-4px 0 16px}
+.statement{background:rgba(255,248,232,.80);border:1px solid rgba(241,223,173,.92);border-radius:18px;padding:13px 16px;text-align:left;margin:-4px 0 16px}
 .statement-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#8a6500;margin-bottom:5px}
 .statement-text{font-size:14px;line-height:1.4;font-weight:750;color:#4d4635}
 @media(max-height:760px){
@@ -160,7 +163,7 @@ body{overflow:hidden}
     const svg=backgroundSvgs[day%backgroundSvgs.length];
     const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
     const splash=document.getElementById('splash');
-    splash.style.backgroundImage='linear-gradient(rgba(244,250,248,.18),rgba(250,252,251,.22)),url("'+url+'")';
+    splash.style.backgroundImage='linear-gradient(rgba(244,250,248,.06),rgba(250,252,251,.08)),url("'+url+'")';
   }
 
   const params=new URLSearchParams(location.search);
