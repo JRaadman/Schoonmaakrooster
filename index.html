@@ -210,16 +210,19 @@ body{overflow:hidden}
     openBtn.style.display='none';
     loadingLine.style.display='flex';
     frame.src=targetUrl();
-    frame.addEventListener('load',function(){
-      setTimeout(function(){
-        if(!frame.classList.contains('ready')) revealApp('');
-      },20000);
-    },{once:true});
+
+    // Safety fallback starts immediately. Previously this timer only started
+    // AFTER the iframe load event, which could make the splash stay visible
+    // for roughly a minute even though Apps Script itself was already ready.
+    setTimeout(function(){
+      if(!frame.classList.contains('ready')) revealApp('');
+    },15000);
+
     setTimeout(function(){
       if(!frame.classList.contains('ready')){
         loadingLine.querySelector('span:last-child').textContent='Nog heel even, het rooster wordt geladen…';
       }
-    },12000);
+    },10000);
   }
 
   function revealApp(name){
