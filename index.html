@@ -12,163 +12,164 @@
 <link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png">
 <title>Schoonmaakrooster</title>
 <style>
-:root{
-  --green:#226b5f;
-  --bg:#eef8f5;
-  --text:#173d36;
-  --muted:#667c77;
-}
+:root{--green:#226b5f;--bg:#eef8f5;--text:#173d36;--muted:#627873;--line:#dce8e4}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}
-body.app-mode{overflow:hidden}
-#installScreen{
-  min-height:100%;
-  display:grid;
-  place-items:center;
-  padding:28px;
-  text-align:center;
-}
-.card{
-  width:min(390px,100%);
-  background:#fff;
-  border-radius:24px;
-  padding:30px 24px;
-  box-shadow:0 10px 35px rgba(0,0,0,.12);
-}
-.logo{width:120px;height:120px;border-radius:25px}
-h1{margin:18px 0 7px;font-size:27px}
-p{line-height:1.45;color:#58716c;margin:0 0 20px}
-button{
-  width:100%;
-  border:0;
-  border-radius:14px;
-  padding:16px 18px;
-  min-height:54px;
-  font-size:17px;
-  font-weight:800;
-  background:var(--green);
-  color:#fff;
-  touch-action:manipulation;
-}
-.small{font-size:13px;margin-top:16px;color:#71837f}
-#appShell{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:#fff;
-}
-#appFrame{
-  width:100%;
-  height:100%;
-  border:0;
-  display:block;
-  background:#fff;
-}
-#loading{
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-  background:var(--bg);
-  z-index:2;
-  padding:24px;
-}
-.loaderCard{
-  background:#fff;
-  border-radius:20px;
-  padding:22px 24px;
-  box-shadow:0 8px 28px rgba(0,0,0,.10);
-  text-align:center;
-  font-weight:800;
-  color:var(--text);
-}
-.spinner{
-  width:34px;height:34px;
-  margin:0 auto 12px;
-  border:4px solid #d8e9e4;
-  border-top-color:var(--green);
-  border-radius:50%;
-  animation:spin .75s linear infinite;
-}
+body{overflow:hidden}
+#splash{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:linear-gradient(180deg,#eef8f5 0%,#f7fbfa 100%);transition:opacity .28s ease}
+#splash.hide{opacity:0;pointer-events:none}
+.card{width:min(410px,100%);background:#fff;border:1px solid var(--line);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.13)}
+.logo{width:98px;height:98px;border-radius:23px;box-shadow:0 7px 20px rgba(0,0,0,.10)}
+.greeting{font-size:29px;font-weight:950;letter-spacing:-.4px;margin:18px 0 5px}
+.wish{font-size:16px;line-height:1.45;color:var(--muted);font-weight:650;margin:0 auto 18px;max-width:310px}
+.riddle{background:#f5faf8;border:1px solid #deebe7;border-radius:18px;padding:15px 16px;text-align:left;margin:0 0 16px}
+.riddle-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--green);margin-bottom:6px}
+.riddle-q{font-size:15px;line-height:1.4;font-weight:750;color:#244b44}
+.riddle-answer{display:none;margin-top:8px;font-size:14px;color:#54716a;font-weight:700}
+.riddle-answer.show{display:block}
+.answer-btn{margin-top:9px;border:0;background:transparent;color:var(--green);font-size:13px;font-weight:900;padding:3px 0;touch-action:manipulation}
+.loading-line{display:flex;align-items:center;justify-content:center;gap:9px;color:#5c726d;font-size:14px;font-weight:800;min-height:30px}
+.spinner{width:18px;height:18px;border:3px solid #d8e9e4;border-top-color:var(--green);border-radius:50%;animation:spin .75s linear infinite;flex:0 0 auto}
 @keyframes spin{to{transform:rotate(360deg)}}
+.primary{display:none;width:100%;margin-top:12px;border:0;border-radius:15px;padding:16px 18px;min-height:54px;font-size:17px;font-weight:900;background:var(--green);color:#fff;touch-action:manipulation}
+.small{font-size:12px;margin-top:13px;color:#83948f}
+#appShell{position:fixed;inset:0;z-index:1;background:#fff}
+#appFrame{width:100%;height:100%;border:0;display:block;background:#fff;opacity:0;pointer-events:none;transition:opacity .18s ease}
+#appFrame.ready{opacity:1;pointer-events:auto}
 </style>
 </head>
 <body>
-
-<main id="installScreen">
+<main id="splash">
   <section class="card">
     <img class="logo" src="app_icon_192.png" alt="Capfun Het Winkel">
-    <h1>Schoonmaakrooster</h1>
-    <p id="instruction">
-      Voeg deze pagina toe aan je beginscherm. Daarna opent het rooster als app, zonder dat je naar script.google.com wordt doorgestuurd.
-    </p>
-    <button id="openBtn" type="button">Rooster openen</button>
+    <div class="greeting" id="greeting">Goedemorgen!</div>
+    <div class="wish">Wij wensen jou een fijne werkdag toe!</div>
+    <div class="riddle">
+      <div class="riddle-title">Raadsel van de dag</div>
+      <div class="riddle-q" id="riddleQ"></div>
+      <button class="answer-btn" id="answerBtn" type="button">Toon antwoord</button>
+      <div class="riddle-answer" id="riddleA"></div>
+    </div>
+    <div class="loading-line" id="loadingLine"><span class="spinner"></span><span>Rooster wordt klaargezet…</span></div>
+    <button class="primary" id="openBtn" type="button">Rooster openen</button>
     <div class="small">Capfun Het Winkel</div>
   </section>
 </main>
-
 <section id="appShell" aria-label="Schoonmaakrooster app">
-  <div id="loading">
-    <div class="loaderCard">
-      <div class="spinner"></div>
-      Schoonmaakrooster openen…
-    </div>
-  </div>
-  <iframe
-    id="appFrame"
-    title="Schoonmaakrooster"
-    allow="geolocation; camera; microphone; clipboard-read; clipboard-write"
-    referrerpolicy="no-referrer-when-downgrade">
-  </iframe>
+  <iframe id="appFrame" title="Schoonmaakrooster" allow="geolocation; camera; microphone; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
 </section>
-
 <script>
 (function(){
-  const BASE = 'https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
+  const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
+  const riddles=[
+    ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
+    ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
+    ['Wat heeft een nek, maar geen hoofd?','Een fles.'],
+    ['Wat gaat omhoog, maar nooit meer omlaag?','Je leeftijd.'],
+    ['Wat heeft één oog, maar kan niet zien?','Een naald.'],
+    ['Wat heeft handen, maar kan niet klappen?','Een klok.'],
+    ['Wat reist de wereld rond, maar blijft altijd in een hoek?','Een postzegel.'],
+    ['Wat kun je breken zonder het aan te raken?','Een belofte.'],
+    ['Wat wordt groter als je er meer van wegneemt?','Een gat.'],
+    ['Welke maand heeft 28 dagen?','Alle maanden.'],
+    ['Wat zit vol gaten en houdt toch water vast?','Een spons.'],
+    ['Wat heeft sleutels, maar opent geen deuren?','Een piano.'],
+    ['Wat heeft een bed, maar slaapt nooit?','Een rivier.'],
+    ['Wat heeft vier poten, maar kan niet lopen?','Een tafel.'],
+    ['Wat kun je vangen, maar niet gooien?','Een verkoudheid.'],
+    ['Wat gaat door glas zonder het te breken?','Licht.'],
+    ['Wat is van jou, maar gebruiken anderen vaker dan jij?','Je naam.'],
+    ['Wat heeft veel woorden, maar spreekt nooit?','Een boek.'],
+    ['Wat komt één keer voor in minuut, twee keer in moment en nooit in duizend jaar?','De letter m.'],
+    ['Welke band speelt nooit muziek?','Een autoband.'],
+    ['Wat heeft een hoofd en een staart, maar geen lichaam?','Een munt.'],
+    ['Wat kan vullen zonder ruimte in te nemen?','Licht.'],
+    ['Wat kun je geven en toch houden?','Je woord.'],
+    ['Wat is altijd voor je, maar kun je nooit zien?','De toekomst.'],
+    ['Wat loopt zonder benen?','Water.'],
+    ['Wat heeft een ring, maar geen vinger?','Een telefoon.'],
+    ['Wat wordt korter naarmate het ouder wordt?','Een kaars.'],
+    ['Wat kun je niet gebruiken voordat je het gebroken hebt?','Een ei.'],
+    ['Wat heeft steden maar geen huizen, bossen maar geen bomen en water maar geen vissen?','Een landkaart.'],
+    ['Wat kan stijgen en dalen zonder zelf te bewegen?','De temperatuur.'],
+    ['Wat heeft oren, maar kan niet horen?','Een kopje.']
+  ];
 
-  const params = new URLSearchParams(location.search);
-  const incoming = params.get('device') || '';
-
-  if (incoming) {
-    try { localStorage.setItem('schoonmaak_device', incoming); } catch(e) {}
-    history.replaceState({}, '', location.pathname);
+  const params=new URLSearchParams(location.search);
+  const incoming=params.get('device')||'';
+  if(incoming){
+    try{localStorage.setItem('schoonmaak_device',incoming);}catch(e){}
+    history.replaceState({},'',location.pathname);
   }
 
-  function getToken(){
-    try { return localStorage.getItem('schoonmaak_device') || ''; }
-    catch(e) { return ''; }
+  function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
+  function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
+  function getToken(){return getStored('schoonmaak_device');}
+  function targetUrl(){const token=getToken();return token?BASE+'?device='+encodeURIComponent(token):BASE;}
+  function greetingFor(name){
+    const h=new Date().getHours();
+    const part=h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond';
+    return name?part+' '+name+'!':part+'!';
+  }
+  function dayOfYear(d){const start=new Date(d.getFullYear(),0,0);return Math.floor((d-start)/86400000);}
+  function setPersonalSplash(name){
+    document.getElementById('greeting').textContent=greetingFor(name||getStored('schoonmaak_name'));
+    const r=riddles[dayOfYear(new Date())%riddles.length];
+    document.getElementById('riddleQ').textContent=r[0];
+    document.getElementById('riddleA').textContent='Antwoord: '+r[1];
   }
 
-  function targetUrl(){
-    const token = getToken();
-    return token ? BASE + '?device=' + encodeURIComponent(token) : BASE;
+  setPersonalSplash('');
+  document.getElementById('answerBtn').addEventListener('click',function(){
+    const a=document.getElementById('riddleA');
+    a.classList.toggle('show');
+    this.textContent=a.classList.contains('show')?'Verberg antwoord':'Toon antwoord';
+  });
+
+  const frame=document.getElementById('appFrame');
+  const splash=document.getElementById('splash');
+  const openBtn=document.getElementById('openBtn');
+  const loadingLine=document.getElementById('loadingLine');
+  let started=false;
+  let startedAt=0;
+
+  function startAppLoad(){
+    if(started)return;
+    started=true;startedAt=Date.now();
+    openBtn.style.display='none';
+    loadingLine.style.display='flex';
+    frame.src=targetUrl();
+    setTimeout(function(){
+      if(!frame.classList.contains('ready')){
+        loadingLine.querySelector('span:last-child').textContent='Nog heel even, het rooster wordt geladen…';
+      }
+    },12000);
   }
 
-  function showApp(){
-    document.body.classList.add('app-mode');
-    document.getElementById('installScreen').style.display = 'none';
-    document.getElementById('appShell').style.display = 'block';
-
-    const frame = document.getElementById('appFrame');
-    const loading = document.getElementById('loading');
-
-    frame.addEventListener('load', function(){
-      setTimeout(function(){
-        loading.style.display = 'none';
-      }, 250);
-    }, {once:true});
-
-    frame.src = targetUrl();
+  function revealApp(name){
+    if(name){setStored('schoonmaak_name',name);setPersonalSplash(name);}
+    const minSplash=850;
+    const wait=Math.max(0,minSplash-(Date.now()-startedAt));
+    setTimeout(function(){
+      frame.classList.add('ready');
+      splash.classList.add('hide');
+      setTimeout(function(){splash.style.display='none';},300);
+    },wait);
   }
 
-  document.getElementById('openBtn').addEventListener('click', showApp);
+  window.addEventListener('message',function(e){
+    if(e.source!==frame.contentWindow)return;
+    const data=e.data||{};
+    if(data.type==='SCHOONMAAK_READY')revealApp(String(data.name||''));
+  });
 
-  const standalone =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
-
-  if (standalone) {
-    showApp();
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  if(standalone){
+    startAppLoad();
+  }else{
+    loadingLine.style.display='none';
+    openBtn.style.display='block';
+    openBtn.addEventListener('click',startAppLoad);
   }
 })();
 </script>
