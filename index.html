@@ -28,6 +28,17 @@ body{overflow:hidden}
 .riddle-answer{display:none;margin-top:8px;font-size:14px;color:#54716a;font-weight:700}
 .riddle-answer.show{display:block}
 .answer-btn{margin-top:9px;border:0;background:transparent;color:var(--green);font-size:13px;font-weight:900;padding:3px 0;touch-action:manipulation}
+.statement{background:#fff8e8;border:1px solid #f1dfad;border-radius:18px;padding:13px 16px;text-align:left;margin:-4px 0 16px}
+.statement-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#8a6500;margin-bottom:5px}
+.statement-text{font-size:14px;line-height:1.4;font-weight:750;color:#4d4635}
+@media(max-height:760px){
+  .card{padding:20px 20px 18px}
+  .logo{width:76px;height:76px}
+  .greeting{font-size:25px;margin-top:12px}
+  .wish{margin-bottom:12px}
+  .riddle{padding:12px 14px;margin-bottom:10px}
+  .statement{padding:11px 14px;margin-bottom:10px}
+}
 .loading-line{display:flex;align-items:center;justify-content:center;gap:9px;color:#5c726d;font-size:14px;font-weight:800;min-height:30px}
 .spinner{width:18px;height:18px;border:3px solid #d8e9e4;border-top-color:var(--green);border-radius:50%;animation:spin .75s linear infinite;flex:0 0 auto}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -49,6 +60,10 @@ body{overflow:hidden}
       <div class="riddle-q" id="riddleQ"></div>
       <button class="answer-btn" id="answerBtn" type="button">Toon antwoord</button>
       <div class="riddle-answer" id="riddleA"></div>
+    </div>
+    <div class="statement">
+      <div class="statement-title">Stelling van de dag</div>
+      <div class="statement-text" id="statementText"></div>
     </div>
     <div class="loading-line" id="loadingLine"><span class="spinner"></span><span>Rooster wordt klaargezet…</span></div>
     <button class="primary" id="openBtn" type="button">Rooster openen</button>
@@ -94,6 +109,39 @@ body{overflow:hidden}
     ['Wat kan stijgen en dalen zonder zelf te bewegen?','De temperatuur.'],
     ['Wat heeft oren, maar kan niet horen?','Een kopje.']
   ];
+  const statements=[
+    'Met goede muziek gaat schoonmaken twee keer zo snel.',
+    'Een compliment van een collega maakt je werkdag beter.',
+    'De eerste accommodatie van de dag is altijd de lastigste.',
+    'Een goede planning is belangrijker dan zo snel mogelijk werken.',
+    'Samen een lastige accommodatie doen is slimmer dan alleen doorploeteren.',
+    'Een koffiepauze op het juiste moment maakt je juist productiever.',
+    'PRIO’s eerst geeft uiteindelijk meer rust in de dag.',
+    'Een opgeruimde werkkar scheelt elke dag verrassend veel tijd.',
+    'Als je klaar bent, even een collega helpen hoort bij goed teamwork.',
+    'Een vrolijke collega maakt zelfs een drukke wisseldag leuker.',
+    'Controle is net zo belangrijk als snel schoonmaken.',
+    'Tien minuten slim plannen kan later een half uur lopen schelen.',
+    'Een duidelijke opmerking vanuit kantoor voorkomt dubbel werk.',
+    'De beste werkdag is de dag waarop iedereen tegelijk klaar is.',
+    'Je werkt fijner als je zoveel mogelijk in hetzelfde deel van het park blijft.',
+    'Een lastig huisje eerst doen is fijner dan het tot het einde bewaren.',
+    'Goed materiaal is minstens zo belangrijk als goed tempo.',
+    'Even overleggen is sneller dan tien minuten zelf zoeken.',
+    'Een kleine grap tussendoor hoort bij een goede werkdag.',
+    'Een tevreden gast begint bij een accommodatie waar je zelf trots op bent.',
+    'Als iets niet goed is, kun je het beter meteen herstellen.',
+    'De snelste route is niet altijd de beste werkvolgorde.',
+    'Een rustige start zorgt voor een snellere rest van de dag.',
+    'Samenwerken is belangrijker dan wie als eerste klaar is.',
+    'Je ziet meer als je een accommodatie na afloop nog één keer rustig bekijkt.',
+    'Een goede schoonmaakdag voelt een beetje als topsport.',
+    'De controleur en schoonmaker zitten uiteindelijk in hetzelfde team.',
+    'Een duidelijke app scheelt meer tijd dan nog harder lopen.',
+    'Een dag zonder vergeten sleutels is al een goede dag.',
+    'Goed humeur is onderdeel van de schoonmaakuitrusting.',
+    'Klaar is pas echt klaar als je er zelf tevreden over bent.'
+  ];
 
   const params=new URLSearchParams(location.search);
   const incoming=params.get('device')||'';
@@ -114,9 +162,11 @@ body{overflow:hidden}
   function dayOfYear(d){const start=new Date(d.getFullYear(),0,0);return Math.floor((d-start)/86400000);}
   function setPersonalSplash(name){
     document.getElementById('greeting').textContent=greetingFor(name||getStored('schoonmaak_name'));
-    const r=riddles[dayOfYear(new Date())%riddles.length];
+    const day=dayOfYear(new Date());
+    const r=riddles[day%riddles.length];
     document.getElementById('riddleQ').textContent=r[0];
     document.getElementById('riddleA').textContent='Antwoord: '+r[1];
+    document.getElementById('statementText').textContent=statements[day%statements.length];
   }
 
   setPersonalSplash('');
