@@ -121,7 +121,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-2125-v91';
+  const APP_IFRAME_BUILD='20261001-2140-v92';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -596,13 +596,23 @@ body{overflow:hidden}
     }catch(e){return 'unsupported';}
   }
 
-  function sendNotificationPermissionToApp_(){
-    try{
-      frame.contentWindow.postMessage({
-        type:'SCHOONMAAK_NOTIFICATION_PERMISSION',
-        permission:currentNotificationPermission_()
-      },'*');
-    }catch(e){}
+  let notificationPermissionRequester=null;
+
+  function sendNotificationPermissionToApp_(targetWindow){
+    const payload={
+      type:'SCHOONMAAK_NOTIFICATION_PERMISSION',
+      permission:currentNotificationPermission_()
+    };
+    const targets=[];
+    if(targetWindow)targets.push(targetWindow);
+    if(notificationPermissionRequester)targets.push(notificationPermissionRequester);
+    if(frame&&frame.contentWindow)targets.push(frame.contentWindow);
+    const seen=new Set();
+    targets.forEach(target=>{
+      if(!target||seen.has(target))return;
+      seen.add(target);
+      try{target.postMessage(payload,'*');}catch(e){}
+    });
   }
 
   function notificationPermissionText_(language,permission){
@@ -681,10 +691,11 @@ body{overflow:hidden}
     if(notifyApp!==false)sendNotificationPermissionToApp_();
   }
 
-  function openNotificationPermissionDialog_(language){
+  function openNotificationPermissionDialog_(language,targetWindow){
+    if(targetWindow)notificationPermissionRequester=targetWindow;
     const permission=currentNotificationPermission_();
     if(permission==='granted'){
-      sendNotificationPermissionToApp_();
+      sendNotificationPermissionToApp_(targetWindow);
       return;
     }
     const t=notificationPermissionText_(language,permission);
@@ -694,7 +705,7 @@ body{overflow:hidden}
     const cancel=document.getElementById('notificationPermissionCancel');
     const allow=document.getElementById('notificationPermissionAllow');
     if(!overlay||!title||!textNode||!cancel||!allow){
-      sendNotificationPermissionToApp_();
+      sendNotificationPermissionToApp_(targetWindow);
       return;
     }
     title.textContent=t.title;
@@ -912,7 +923,10 @@ body{overflow:hidden}
   window.addEventListener('message',function(e){
     const data=e.data||{};
     if(data.type==='SCHOONMAAK_NOTIFICATION_STATUS_REQUEST'){
-      sendNotificationPermissionToApp_();
+      // Antwoord rechtstreeks naar precies het venster dat de status vroeg.
+      // Dit is nodig omdat Apps Script op sommige telefoons een extra wrapper
+      // tussen de app en de launcher gebruikt.
+      sendNotificationPermissionToApp_(e.source);
       return;
     }
     if(data.type==='SCHOONMAAK_REQUEST_NOTIFICATION_PERMISSION'){
@@ -921,10 +935,11 @@ body{overflow:hidden}
         setStored('schoonmaak_lang',lang);
         applyLauncherLanguage();
       }
+      notificationPermissionRequester=e.source||notificationPermissionRequester;
       // Een permissievraag vanuit een iframe/postMessage telt op iOS/Android niet
       // altijd als directe gebruikersklik. Daarom tonen we eerst een knop in de
       // bovenliggende pagina; die knop vraagt de systeemtoestemming wél direct.
-      openNotificationPermissionDialog_(lang||getAppLang());
+      openNotificationPermissionDialog_(lang||getAppLang(),e.source);
       return;
     }
     if(data.type==='SCHOONMAAK_PUSH_CONFIG'){
