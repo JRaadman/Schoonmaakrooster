@@ -102,7 +102,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-1705-v88';
+  const APP_IFRAME_BUILD='20261001-2025-v89';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -570,19 +570,39 @@ body{overflow:hidden}
     this.textContent=a.classList.contains('show')?hide:show;
   });
 
-  async function ensureNotificationPermission_(){
+  function currentNotificationPermission_(){
     try{
-      if(!('Notification' in window))return;
-      if(Notification.permission==='default'){
-        await Notification.requestPermission();
-      }
+      if(!('Notification' in window))return 'unsupported';
+      return String(Notification.permission||'default');
+    }catch(e){return 'unsupported';}
+  }
+
+  function sendNotificationPermissionToApp_(){
+    try{
+      frame.contentWindow.postMessage({
+        type:'SCHOONMAAK_NOTIFICATION_PERMISSION',
+        permission:currentNotificationPermission_()
+      },'*');
     }catch(e){}
   }
 
+  async function requestNotificationPermissionFromSetup_(){
+    let permission=currentNotificationPermission_();
+    try{
+      if(permission==='default' && 'Notification' in window){
+        permission=await Notification.requestPermission();
+      }
+    }catch(e){
+      permission=currentNotificationPermission_();
+    }
+    sendNotificationPermissionToApp_();
+    return permission;
+  }
+
   function openRosterFromButton_(){
-    // De klik op 'Rooster openen' is een geldige gebruikersactie voor de
-    // browsermelding. We vragen toestemming maximaal één keer via de browser.
-    ensureNotificationPermission_().finally(startAppLoad);
+    // Geen onverwachte browserprompt meer bij het openen van het rooster.
+    // Toestemming wordt tijdens de eerste installatie/koppeling bewust gevraagd.
+    startAppLoad();
   }
 
   function showOpenRosterButton_(){
@@ -759,6 +779,19 @@ body{overflow:hidden}
 
   window.addEventListener('message',function(e){
     const data=e.data||{};
+    if(data.type==='SCHOONMAAK_NOTIFICATION_STATUS_REQUEST'){
+      sendNotificationPermissionToApp_();
+      return;
+    }
+    if(data.type==='SCHOONMAAK_REQUEST_NOTIFICATION_PERMISSION'){
+      const lang=normalizeLang(data.language);
+      if(lang){
+        setStored('schoonmaak_lang',lang);
+        applyLauncherLanguage();
+      }
+      requestNotificationPermissionFromSetup_();
+      return;
+    }
     if(data.type==='SCHOONMAAK_PUSH_CONFIG'){
       oneSignalConfig={
         appId:String(data.appId||'').trim(),
