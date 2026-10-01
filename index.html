@@ -99,7 +99,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-0005-v69';
+  const APP_IFRAME_BUILD='20261001-0930-v70diag';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -277,6 +277,18 @@ body{overflow:hidden}
   const loadingLine=document.getElementById('loadingLine');
   let started=false;
   let startedAt=0;
+  let lastStartupDiag='';
+
+  function setStartupStatus_(text){
+    const target=loadingLine&&loadingLine.querySelector('span:last-child');
+    if(target)target.textContent=String(text||'');
+  }
+
+  frame.addEventListener('load',function(){
+    if(!frame.classList.contains('ready')&&!lastStartupDiag){
+      setStartupStatus_('App-scherm geladen · roosterdata ophalen…');
+    }
+  });
 
   function startAppLoad(){
     if(started)return;
@@ -330,6 +342,13 @@ body{overflow:hidden}
 
   window.addEventListener('message',function(e){
     const data=e.data||{};
+    if(data.type==='SCHOONMAAK_DIAG'){
+      lastStartupDiag=String(data.step||'')+'|'+String(data.detail||'');
+      const step=String(data.step||'');
+      const detail=String(data.detail||'');
+      setStartupStatus_('Opstart '+step+' · '+detail);
+      return;
+    }
     if(data.type==='SCHOONMAAK_LANGUAGE'){
       const lang=normalizeLang(data.language);
       if(lang){
