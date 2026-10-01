@@ -56,6 +56,7 @@ body{overflow:hidden}
 #appFrame{width:100%;height:100%;border:0;display:block;background:#fff;opacity:1;visibility:visible;pointer-events:none}
 #appFrame.ready{pointer-events:auto}
 </style>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body translate="no" class="notranslate">
 <main id="splash">
@@ -101,7 +102,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-1555-v87';
+  const APP_IFRAME_BUILD='20261001-1615-v88';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -657,8 +658,109 @@ body{overflow:hidden}
     openBtn.onclick=function(){location.reload();};
   }
 
+
+  let oneSignalInitPromise=null;
+  let oneSignalConfig={appId:'',externalId:'',language:'nl'};
+
+  function sendPushStatusToApp_(status){
+    try{
+      frame.contentWindow.postMessage(Object.assign({type:'SCHOONMAAK_PUSH_STATUS'},status||{}),'*');
+    }catch(e){}
+  }
+
+  function ensureOneSignal_(cfg){
+    cfg=cfg||{};
+    const appId=String(cfg.appId||'').trim();
+    const externalId=String(cfg.externalId||'').trim();
+    const language=normalizeLang(cfg.language)||getAppLang()||'nl';
+    if(!appId||!externalId)return Promise.resolve(null);
+    oneSignalConfig={appId,externalId,language};
+    if(oneSignalInitPromise)return oneSignalInitPromise;
+    window.OneSignalDeferred=window.OneSignalDeferred||[];
+    oneSignalInitPromise=new Promise(resolve=>{
+      OneSignalDeferred.push(async function(OneSignal){
+        try{
+          await OneSignal.init({
+            appId: appId,
+            autoResubscribe: true,
+            serviceWorkerPath: '/Schoonmaakrooster/push/onesignal/OneSignalSDKWorker.js',
+            serviceWorkerParam: {scope:'/Schoonmaakrooster/push/onesignal/'},
+            welcomeNotification: {disable:true},
+            notificationClickHandlerMatch:'origin',
+            notificationClickHandlerAction:'focus'
+          });
+          await OneSignal.login(externalId);
+          try{OneSignal.User.setLanguage(language);}catch(e){}
+          try{
+            OneSignal.User.PushSubscription.addEventListener('change',function(){
+              sendPushStatusToApp_({
+                supported:OneSignal.Notifications.isPushSupported(),
+                permission:OneSignal.Notifications.permission===true?'granted':(Notification.permission||'default'),
+                optedIn:!!OneSignal.User.PushSubscription.optedIn
+              });
+            });
+          }catch(e){}
+          resolve(OneSignal);
+        }catch(err){
+          oneSignalInitPromise=null;
+          sendPushStatusToApp_({supported:false,permission:'error',optedIn:false,error:String(err&&err.message||err||'')});
+          resolve(null);
+        }
+      });
+    });
+    return oneSignalInitPromise;
+  }
+
+  async function reportPushStatus_(){
+    const OneSignal=await ensureOneSignal_(oneSignalConfig);
+    if(!OneSignal){
+      sendPushStatusToApp_({supported:false,permission:'unavailable',optedIn:false});
+      return;
+    }
+    let supported=false;
+    try{supported=!!OneSignal.Notifications.isPushSupported();}catch(e){}
+    let permission='default';
+    try{permission=OneSignal.Notifications.permission===true?'granted':(Notification.permission||'default');}catch(e){}
+    let optedIn=false;
+    try{optedIn=!!OneSignal.User.PushSubscription.optedIn;}catch(e){}
+    sendPushStatusToApp_({supported,permission,optedIn});
+  }
+
+  async function subscribePush_(){
+    const OneSignal=await ensureOneSignal_(oneSignalConfig);
+    if(!OneSignal){await reportPushStatus_();return;}
+    try{
+      if(!OneSignal.Notifications.isPushSupported()){
+        sendPushStatusToApp_({supported:false,permission:'unsupported',optedIn:false});
+        return;
+      }
+      await OneSignal.login(oneSignalConfig.externalId);
+      try{OneSignal.User.setLanguage(oneSignalConfig.language);}catch(e){}
+      await OneSignal.Notifications.requestPermission();
+      try{await OneSignal.User.PushSubscription.optIn();}catch(e){}
+    }catch(e){}
+    await reportPushStatus_();
+  }
+
   window.addEventListener('message',function(e){
     const data=e.data||{};
+    if(data.type==='SCHOONMAAK_PUSH_CONFIG'){
+      oneSignalConfig={
+        appId:String(data.appId||'').trim(),
+        externalId:String(data.externalId||'').trim(),
+        language:normalizeLang(data.language)||getAppLang()||'nl'
+      };
+      ensureOneSignal_(oneSignalConfig).then(()=>reportPushStatus_());
+      return;
+    }
+    if(data.type==='SCHOONMAAK_PUSH_STATUS_REQUEST'){
+      reportPushStatus_();
+      return;
+    }
+    if(data.type==='SCHOONMAAK_PUSH_SUBSCRIBE'){
+      subscribePush_();
+      return;
+    }
     if(data.type==='SCHOONMAAK_DIAG'){
       // Diagnose blijft intern beschikbaar, maar wordt niet meer aan medewerkers getoond.
       lastStartupDiag=String(data.step||'')+'|'+String(data.detail||'');
