@@ -99,7 +99,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-1235-v77';
+  const APP_IFRAME_BUILD='20261001-1245-v78';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -431,17 +431,22 @@ body{overflow:hidden}
     this.textContent=a.classList.contains('show')?hide:show;
   });
 
+  function showOpenRosterButton_(){
+    loadingLine.style.display='none';
+    openBtn.style.display='block';
+    openBtn.onclick=startAppLoad;
+  }
+
   document.querySelectorAll('.language-btn').forEach(btn=>btn.addEventListener('click',function(){
     const next=setAppLang(this.dataset.lang);
     setStored('schoonmaak_lang_pending',next);
     setStored('schoonmaak_lang_picker_done','2');
     applyLauncherLanguage();
     setPersonalSplash('');
-    if(started){
-      location.reload();
-      return;
-    }
-    startAppLoad();
+
+    // Na taalkeuze blijft het beginscherm staan.
+    // De medewerker opent het rooster pas zelf met de knop.
+    if(!started)showOpenRosterButton_();
   }));
 
   const frame=document.getElementById('appFrame');
@@ -550,11 +555,11 @@ body{overflow:hidden}
     }
   });
 
-  const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
   const savedLang=getAppLang();
   const needsLanguageChoice=getStored('schoonmaak_lang_picker_done')!=='2';
+
   if(needsLanguageChoice){
-    // Eenmalige duidelijke keuze vóór de app wordt gestart.
+    // Eerste keer: eerst taal kiezen. Daarna verschijnt 'Rooster openen'.
     loadingLine.style.display='none';
     openBtn.style.display='none';
     const chooser=document.getElementById('languageChooser');
@@ -563,13 +568,10 @@ body{overflow:hidden}
     applyLauncherLanguage();
     const chooser=document.getElementById('languageChooser');
     if(chooser)chooser.classList.add('saved');
-    if(standalone){
-      startAppLoad();
-    }else{
-      loadingLine.style.display='none';
-      openBtn.style.display='block';
-      openBtn.addEventListener('click',startAppLoad);
-    }
+
+    // Ook vanuit het app-icoon niet automatisch doorstarten.
+    // Zo blijft er tijd voor het raadsel en de stelling.
+    showOpenRosterButton_();
   }else{
     loadingLine.style.display='none';
     openBtn.style.display='none';
