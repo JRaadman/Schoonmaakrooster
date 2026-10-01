@@ -55,6 +55,15 @@ body{overflow:hidden}
 #appShell{position:fixed;inset:0;z-index:1;background:#fff}
 #appFrame{width:100%;height:100%;border:0;display:block;background:#fff;opacity:1;visibility:visible;pointer-events:none}
 #appFrame.ready{pointer-events:auto}
+#notificationPermissionOverlay{position:fixed;inset:0;z-index:300;background:rgba(22,31,29,.48);display:none;align-items:flex-end;justify-content:center;padding:18px}
+#notificationPermissionOverlay.open{display:flex}
+.notification-permission-card{width:min(520px,100%);background:#fff;border-radius:26px;padding:24px 22px calc(22px + env(safe-area-inset-bottom));box-shadow:0 18px 50px rgba(0,0,0,.24)}
+.notification-permission-title{font-size:27px;line-height:1.12;font-weight:950;color:#17211f;margin:0 0 12px}
+.notification-permission-text{font-size:16px;line-height:1.45;color:#66706d;margin:0 0 18px}
+.notification-permission-actions{display:grid;grid-template-columns:1fr 1.15fr;gap:10px}
+.notification-permission-actions button{border-radius:16px;min-height:56px;padding:12px 14px;font-size:16px;font-weight:900}
+#notificationPermissionCancel{background:#fff;border:1px solid #d9dfdd;color:#222}
+#notificationPermissionAllow{background:var(--green);border:0;color:#fff}
 </style>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
@@ -92,6 +101,16 @@ body{overflow:hidden}
 <section id="appShell" aria-label="Schoonmaakrooster app">
   <iframe id="appFrame" title="Schoonmaakrooster" loading="eager" translate="no" class="notranslate" allow="geolocation; camera; microphone; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
 </section>
+<div id="notificationPermissionOverlay" role="dialog" aria-modal="true" aria-labelledby="notificationPermissionTitle">
+  <div class="notification-permission-card">
+    <h2 class="notification-permission-title" id="notificationPermissionTitle">Meldingen toestaan</h2>
+    <p class="notification-permission-text" id="notificationPermissionText"></p>
+    <div class="notification-permission-actions">
+      <button id="notificationPermissionCancel" type="button">Niet nu</button>
+      <button id="notificationPermissionAllow" type="button">Meldingen toestaan</button>
+    </div>
+  </div>
+</div>
 <script>
 (function(){
 
@@ -102,7 +121,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-2045-v90';
+  const APP_IFRAME_BUILD='20261001-2125-v91';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -586,18 +605,131 @@ body{overflow:hidden}
     }catch(e){}
   }
 
-  async function requestNotificationPermissionFromSetup_(){
+  function notificationPermissionText_(language,permission){
+    const lang=normalizeLang(language)||getAppLang()||'nl';
+    const all={
+      nl:{
+        title:'Meldingen toestaan',
+        text:'Tik hieronder op “Meldingen toestaan”. Daarna vraagt je telefoon nog één keer officieel om toestemming.',
+        allow:'Meldingen toestaan',
+        cancel:'Niet nu',
+        deniedTitle:'Meldingen staan uit',
+        deniedText:'Meldingen zijn eerder geblokkeerd. Zet meldingen voor Schoonmaakrooster aan in de instellingen van je telefoon/browser en tik daarna op “Opnieuw controleren”.',
+        check:'Opnieuw controleren',
+        unsupportedTitle:'Meldingen niet beschikbaar',
+        unsupportedText:'Deze browser of deze manier van openen ondersteunt meldingen niet. Open de geïnstalleerde Schoonmaakrooster-app en probeer het daar opnieuw.',
+        close:'Sluiten'
+      },
+      en:{
+        title:'Allow notifications',
+        text:'Tap “Allow notifications” below. Your phone will then ask you once more for official permission.',
+        allow:'Allow notifications',
+        cancel:'Not now',
+        deniedTitle:'Notifications are off',
+        deniedText:'Notifications were blocked earlier. Enable notifications for Cleaning Schedule in your phone/browser settings and then tap “Check again”.',
+        check:'Check again',
+        unsupportedTitle:'Notifications unavailable',
+        unsupportedText:'This browser or way of opening the app does not support notifications. Open the installed Cleaning Schedule app and try again there.',
+        close:'Close'
+      },
+      es:{
+        title:'Permitir notificaciones',
+        text:'Pulsa “Permitir notificaciones”. Después, el teléfono te pedirá una vez más la autorización oficial.',
+        allow:'Permitir notificaciones',
+        cancel:'Ahora no',
+        deniedTitle:'Las notificaciones están desactivadas',
+        deniedText:'Las notificaciones se bloquearon anteriormente. Actívalas para el plan de limpieza en los ajustes del teléfono/navegador y después pulsa “Comprobar de nuevo”.',
+        check:'Comprobar de nuevo',
+        unsupportedTitle:'Notificaciones no disponibles',
+        unsupportedText:'Este navegador o esta forma de abrir la app no admite notificaciones. Abre la app instalada del plan de limpieza e inténtalo de nuevo allí.',
+        close:'Cerrar'
+      },
+      de:{
+        title:'Mitteilungen erlauben',
+        text:'Tippe unten auf „Mitteilungen erlauben“. Danach fragt dein Telefon noch einmal offiziell nach der Erlaubnis.',
+        allow:'Mitteilungen erlauben',
+        cancel:'Nicht jetzt',
+        deniedTitle:'Mitteilungen sind ausgeschaltet',
+        deniedText:'Mitteilungen wurden zuvor blockiert. Aktiviere Mitteilungen für den Reinigungsplan in den Telefon-/Browsereinstellungen und tippe danach auf „Erneut prüfen“.',
+        check:'Erneut prüfen',
+        unsupportedTitle:'Mitteilungen nicht verfügbar',
+        unsupportedText:'Dieser Browser oder diese Art, die App zu öffnen, unterstützt keine Mitteilungen. Öffne die installierte Reinigungsplan-App und versuche es dort erneut.',
+        close:'Schließen'
+      },
+      it:{
+        title:'Consenti notifiche',
+        text:'Tocca “Consenti notifiche” qui sotto. Il telefono chiederà poi ancora una volta l’autorizzazione ufficiale.',
+        allow:'Consenti notifiche',
+        cancel:'Non ora',
+        deniedTitle:'Le notifiche sono disattivate',
+        deniedText:'Le notifiche sono state bloccate in precedenza. Attivale per il piano pulizie nelle impostazioni del telefono/browser e poi tocca “Controlla di nuovo”.',
+        check:'Controlla di nuovo',
+        unsupportedTitle:'Notifiche non disponibili',
+        unsupportedText:'Questo browser o questo modo di aprire l’app non supporta le notifiche. Apri l’app installata del piano pulizie e riprova lì.',
+        close:'Chiudi'
+      }
+    };
+    const t=all[lang]||all.nl;
+    if(permission==='denied')return {title:t.deniedTitle,text:t.deniedText,allow:t.check,cancel:t.close,mode:'check'};
+    if(permission==='unsupported')return {title:t.unsupportedTitle,text:t.unsupportedText,allow:'',cancel:t.close,mode:'unsupported'};
+    return {title:t.title,text:t.text,allow:t.allow,cancel:t.cancel,mode:'request'};
+  }
+
+  function closeNotificationPermissionDialog_(notifyApp){
+    const overlay=document.getElementById('notificationPermissionOverlay');
+    if(overlay)overlay.classList.remove('open');
+    if(notifyApp!==false)sendNotificationPermissionToApp_();
+  }
+
+  function openNotificationPermissionDialog_(language){
+    const permission=currentNotificationPermission_();
+    if(permission==='granted'){
+      sendNotificationPermissionToApp_();
+      return;
+    }
+    const t=notificationPermissionText_(language,permission);
+    const overlay=document.getElementById('notificationPermissionOverlay');
+    const title=document.getElementById('notificationPermissionTitle');
+    const textNode=document.getElementById('notificationPermissionText');
+    const cancel=document.getElementById('notificationPermissionCancel');
+    const allow=document.getElementById('notificationPermissionAllow');
+    if(!overlay||!title||!textNode||!cancel||!allow){
+      sendNotificationPermissionToApp_();
+      return;
+    }
+    title.textContent=t.title;
+    textNode.textContent=t.text;
+    cancel.textContent=t.cancel;
+    allow.textContent=t.allow||'';
+    allow.style.display=t.mode==='unsupported'?'none':'block';
+    allow.dataset.mode=t.mode;
+    overlay.dataset.language=normalizeLang(language)||getAppLang()||'nl';
+    overlay.classList.add('open');
+  }
+
+  async function handleTopLevelNotificationPermission_(){
+    const allow=document.getElementById('notificationPermissionAllow');
+    const mode=allow&&allow.dataset.mode||'request';
+    if(mode==='check'){
+      closeNotificationPermissionDialog_(true);
+      return;
+    }
     let permission=currentNotificationPermission_();
     try{
       if(permission==='default' && 'Notification' in window){
+        // Belangrijk: deze call gebeurt rechtstreeks vanuit een klik op de
+        // bovenliggende GitHub-pagina. Daardoor accepteert iOS/Android de actie.
         permission=await Notification.requestPermission();
       }
     }catch(e){
       permission=currentNotificationPermission_();
     }
+    closeNotificationPermissionDialog_(false);
     sendNotificationPermissionToApp_();
-    return permission;
   }
+
+  document.getElementById('notificationPermissionAllow')?.addEventListener('click',handleTopLevelNotificationPermission_);
+  document.getElementById('notificationPermissionCancel')?.addEventListener('click',()=>closeNotificationPermissionDialog_(true));
 
   function openRosterFromButton_(){
     // Geen onverwachte browserprompt meer bij het openen van het rooster.
@@ -789,7 +921,10 @@ body{overflow:hidden}
         setStored('schoonmaak_lang',lang);
         applyLauncherLanguage();
       }
-      requestNotificationPermissionFromSetup_();
+      // Een permissievraag vanuit een iframe/postMessage telt op iOS/Android niet
+      // altijd als directe gebruikersklik. Daarom tonen we eerst een knop in de
+      // bovenliggende pagina; die knop vraagt de systeemtoestemming wél direct.
+      openNotificationPermissionDialog_(lang||getAppLang());
       return;
     }
     if(data.type==='SCHOONMAAK_PUSH_CONFIG'){
