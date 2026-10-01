@@ -102,7 +102,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-1615-v88';
+  const APP_IFRAME_BUILD='20261001-1705-v88';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -570,10 +570,25 @@ body{overflow:hidden}
     this.textContent=a.classList.contains('show')?hide:show;
   });
 
+  async function ensureNotificationPermission_(){
+    try{
+      if(!('Notification' in window))return;
+      if(Notification.permission==='default'){
+        await Notification.requestPermission();
+      }
+    }catch(e){}
+  }
+
+  function openRosterFromButton_(){
+    // De klik op 'Rooster openen' is een geldige gebruikersactie voor de
+    // browsermelding. We vragen toestemming maximaal één keer via de browser.
+    ensureNotificationPermission_().finally(startAppLoad);
+  }
+
   function showOpenRosterButton_(){
     loadingLine.style.display='none';
     openBtn.style.display='block';
-    openBtn.onclick=startAppLoad;
+    openBtn.onclick=openRosterFromButton_;
   }
 
   document.querySelectorAll('.language-btn').forEach(btn=>btn.addEventListener('click',function(){
@@ -768,6 +783,21 @@ body{overflow:hidden}
       if(step==='4' && !frame.classList.contains('ready')){
         revealApp(String(data.name||''));
       }
+      return;
+    }
+    if(data.type==='SCHOONMAAK_NOTIFY'){
+      try{
+        if('Notification' in window && Notification.permission==='granted' && 'serviceWorker' in navigator){
+          navigator.serviceWorker.ready.then(reg=>reg.showNotification(String(data.title||'Schoonmaakrooster'),{
+            body:String(data.body||''),
+            icon:'./app_icon_192.png',
+            badge:'./app_icon_192.png',
+            tag:String(data.tag||'schoonmaakrooster'),
+            renotify:true,
+            data:data.data||{url:'./'}
+          })).catch(()=>{});
+        }
+      }catch(_){}
       return;
     }
     if(data.type==='SCHOONMAAK_LANGUAGE'){
