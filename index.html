@@ -99,7 +99,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-1055-v73';
+  const APP_IFRAME_BUILD='20261001-1125-v74';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -366,6 +366,12 @@ body{overflow:hidden}
       const step=String(data.step||'');
       const detail=String(data.detail||'');
       setStartupStatus_('Opstart '+step+' · '+detail);
+
+      // Stap 4 betekent: de app-shell zelf staat klaar. Laat die meteen zien.
+      // We wachten dus niet langer op het volledige dagrooster of een apart READY-signaal.
+      if(step==='4' && !frame.classList.contains('ready')){
+        revealApp(String(data.name||''));
+      }
       return;
     }
     if(data.type==='SCHOONMAAK_LANGUAGE'){
