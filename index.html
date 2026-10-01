@@ -25,7 +25,7 @@ body{overflow:hidden}
 .logo{width:98px;height:98px;border-radius:23px;box-shadow:0 7px 20px rgba(0,0,0,.10)}
 .greeting{font-size:29px;font-weight:950;letter-spacing:-.4px;margin:18px 0 5px}
 .wish{font-size:16px;line-height:1.45;color:var(--muted);font-weight:650;margin:0 auto 14px;max-width:310px}
-.language-chooser{margin:0 0 16px}
+.language-chooser{margin:0 0 16px}.language-chooser.saved{display:none}
 .language-title{font-size:11px;font-weight:900;letter-spacing:.35px;color:#6d817c;margin-bottom:8px}
 .language-buttons{display:flex;justify-content:center;gap:8px}
 .language-btn{min-width:58px;border:1px solid rgba(34,107,95,.22);background:rgba(255,255,255,.62);color:var(--green);border-radius:999px;padding:9px 13px;font-size:13px;font-weight:950;box-shadow:0 2px 8px rgba(18,67,58,.06)}
@@ -99,7 +99,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-1135-v75';
+  const APP_IFRAME_BUILD='20261001-1145-v76';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -167,6 +167,145 @@ body{overflow:hidden}
     'Klaar is pas echt klaar als je er zelf tevreden over bent.'
   ];
 
+  const riddlesByLang={
+    nl:riddles,
+    en:[
+      ['What gets wetter the more it dries?','A towel.'],
+      ['What has teeth but cannot bite?','A comb.'],
+      ['What has a neck but no head?','A bottle.'],
+      ['What goes up but never comes down?','Your age.'],
+      ['What has one eye but cannot see?','A needle.'],
+      ['What has hands but cannot clap?','A clock.'],
+      ['What travels around the world but stays in one corner?','A stamp.'],
+      ['What can you break without touching it?','A promise.'],
+      ['What gets bigger the more you take away from it?','A hole.'],
+      ['Which month has 28 days?','All months.'],
+      ['What is full of holes but still holds water?','A sponge.'],
+      ['What has keys but opens no doors?','A piano.'],
+      ['What has a bed but never sleeps?','A river.'],
+      ['What has four legs but cannot walk?','A table.'],
+      ['What can you catch but not throw?','A cold.'],
+      ['What goes through glass without breaking it?','Light.'],
+      ['What belongs to you but other people use it more than you do?','Your name.'],
+      ['What has lots of words but never speaks?','A book.'],
+      ['What appears once in minute, twice in moment and never in a thousand years?','The letter m.'],
+      ['Which band never plays music?','A rubber band.'],
+      ['What has a head and a tail but no body?','A coin.'],
+      ['What can fill a room without taking up space?','Light.'],
+      ['What can you give and still keep?','Your word.'],
+      ['What is always in front of you but can never be seen?','The future.'],
+      ['What runs without legs?','Water.'],
+      ['What has a ring but no finger?','A telephone.'],
+      ['What gets shorter as it gets older?','A candle.'],
+      ['What can you not use until you have broken it?','An egg.'],
+      ['What has cities but no houses, forests but no trees and water but no fish?','A map.'],
+      ['What can rise and fall without moving?','The temperature.'],
+      ['What has an ear but cannot hear?','A cup.']
+    ],
+    es:[
+      ['¿Qué se moja cuanto más seca?','Una toalla.'],
+      ['¿Qué tiene dientes pero no puede morder?','Un peine.'],
+      ['¿Qué tiene cuello pero no cabeza?','Una botella.'],
+      ['¿Qué sube y nunca vuelve a bajar?','Tu edad.'],
+      ['¿Qué tiene un ojo pero no puede ver?','Una aguja.'],
+      ['¿Qué tiene manos pero no puede aplaudir?','Un reloj.'],
+      ['¿Qué viaja por todo el mundo pero siempre se queda en una esquina?','Un sello.'],
+      ['¿Qué puedes romper sin tocarlo?','Una promesa.'],
+      ['¿Qué se hace más grande cuanto más le quitas?','Un agujero.'],
+      ['¿Qué mes tiene 28 días?','Todos los meses.'],
+      ['¿Qué está lleno de agujeros y aun así retiene agua?','Una esponja.'],
+      ['¿Qué tiene teclas pero no abre puertas?','Un piano.'],
+      ['¿Qué tiene cama pero nunca duerme?','Un río.'],
+      ['¿Qué tiene cuatro patas pero no puede caminar?','Una mesa.'],
+      ['¿Qué puedes atrapar pero no lanzar?','Un resfriado.'],
+      ['¿Qué atraviesa el cristal sin romperlo?','La luz.'],
+      ['¿Qué es tuyo pero los demás lo usan más que tú?','Tu nombre.'],
+      ['¿Qué tiene muchas palabras pero nunca habla?','Un libro.'],
+      ['¿Qué aparece una vez en minuto, dos veces en momento y nunca en mil años?','La letra m.'],
+      ['¿Qué banda nunca toca música?','Una banda de goma.'],
+      ['¿Qué tiene cara y cruz pero no cuerpo?','Una moneda.'],
+      ['¿Qué puede llenar una habitación sin ocupar espacio?','La luz.'],
+      ['¿Qué puedes dar y aun así conservar?','Tu palabra.'],
+      ['¿Qué siempre está delante de ti pero nunca puedes verlo?','El futuro.'],
+      ['¿Qué corre sin piernas?','El agua.'],
+      ['¿Qué tiene timbre pero no dedo?','Un teléfono.'],
+      ['¿Qué se hace más corto a medida que envejece?','Una vela.'],
+      ['¿Qué no puedes usar antes de romperlo?','Un huevo.'],
+      ['¿Qué tiene ciudades sin casas, bosques sin árboles y agua sin peces?','Un mapa.'],
+      ['¿Qué puede subir y bajar sin moverse?','La temperatura.'],
+      ['¿Qué tiene oreja pero no puede oír?','Una taza.']
+    ]
+  };
+  const statementsByLang={
+    nl:statements,
+    en:[
+      'Good music makes cleaning feel twice as fast.',
+      'A compliment from a colleague makes your working day better.',
+      'The first accommodation of the day is always the hardest.',
+      'Good planning is more important than working as fast as possible.',
+      'Doing a difficult accommodation together is smarter than struggling alone.',
+      'A coffee break at the right moment can actually make you more productive.',
+      'Doing priority accommodations first gives you more peace later in the day.',
+      'A tidy cleaning cart saves a surprising amount of time every day.',
+      'Helping a colleague when you are finished is part of good teamwork.',
+      'A cheerful colleague makes even a busy changeover day more enjoyable.',
+      'Checking quality is just as important as cleaning quickly.',
+      'Ten minutes of smart planning can save half an hour of walking later.',
+      'A clear note from the office prevents double work.',
+      'The best working day is one where everyone finishes together.',
+      'Work is easier when you can stay in the same part of the park as much as possible.',
+      'It is nicer to do a difficult accommodation first than save it until the end.',
+      'Good equipment is at least as important as a good pace.',
+      'A quick discussion is faster than searching on your own for ten minutes.',
+      'A small joke now and then belongs to a good working day.',
+      'A satisfied guest starts with an accommodation you are proud of.',
+      'If something is not right, it is better to fix it immediately.',
+      'The shortest route is not always the best work order.',
+      'A calm start makes the rest of the day faster.',
+      'Working together is more important than who finishes first.',
+      'You notice more when you calmly check an accommodation one more time at the end.',
+      'A good cleaning day feels a little like top-level sport.',
+      'The inspector and cleaner are ultimately on the same team.',
+      'A clear app saves more time than simply walking faster.',
+      'A day without forgotten keys is already a good day.',
+      'A good mood is part of the cleaning equipment.',
+      'Finished really means finished when you are satisfied with it yourself.'
+    ],
+    es:[
+      'Con buena música, limpiar parece ir el doble de rápido.',
+      'Un cumplido de un compañero mejora tu jornada de trabajo.',
+      'El primer alojamiento del día siempre es el más difícil.',
+      'Una buena planificación es más importante que trabajar lo más rápido posible.',
+      'Hacer juntos un alojamiento difícil es más inteligente que luchar solo.',
+      'Una pausa para el café en el momento adecuado puede hacerte más productivo.',
+      'Hacer primero las prioridades da más tranquilidad durante el resto del día.',
+      'Un carro de limpieza ordenado ahorra mucho tiempo cada día.',
+      'Ayudar a un compañero cuando terminas forma parte de un buen trabajo en equipo.',
+      'Un compañero alegre hace más agradable incluso un día de cambios muy ocupado.',
+      'El control de calidad es tan importante como limpiar rápido.',
+      'Diez minutos de buena planificación pueden ahorrar media hora caminando después.',
+      'Una nota clara de la oficina evita hacer el trabajo dos veces.',
+      'El mejor día de trabajo es aquel en el que todos terminan juntos.',
+      'Se trabaja mejor si puedes permanecer todo lo posible en la misma zona del parque.',
+      'Es mejor hacer primero un alojamiento difícil que dejarlo para el final.',
+      'Un buen material es al menos tan importante como un buen ritmo.',
+      'Hablar un momento es más rápido que buscar solo durante diez minutos.',
+      'Una pequeña broma de vez en cuando forma parte de una buena jornada.',
+      'Un huésped satisfecho empieza con un alojamiento del que tú mismo estés orgulloso.',
+      'Si algo no está bien, es mejor arreglarlo de inmediato.',
+      'La ruta más corta no siempre es el mejor orden de trabajo.',
+      'Un comienzo tranquilo hace más rápido el resto del día.',
+      'Trabajar juntos es más importante que quién termina primero.',
+      'Ves más si al terminar revisas el alojamiento una vez más con calma.',
+      'Un buen día de limpieza se parece un poco al deporte de alto nivel.',
+      'El controlador y el limpiador forman parte del mismo equipo.',
+      'Una aplicación clara ahorra más tiempo que caminar todavía más rápido.',
+      'Un día sin llaves olvidadas ya es un buen día.',
+      'El buen humor forma parte del equipo de limpieza.',
+      'El trabajo solo está realmente terminado cuando tú también estás satisfecho.'
+    ]
+  };
+
   const backgroundSvgs=[
 `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#edf7f3"/><circle cx="72" cy="112" r="42" fill="#f5d66d" opacity=".55"/><path d="M0 670 Q90 610 190 665 T390 640 V844 H0Z" fill="#d7eadb"/><path d="M0 710 Q110 655 215 715 T390 690 V844 H0Z" fill="#c5ddca"/><g opacity=".48"><path d="M250 245h108v105H250z" fill="#d9c2a4"/><path d="M236 245l68-58 69 58z" fill="#8fa58f"/><rect x="280" y="285" width="38" height="65" rx="3" fill="#b4d0d6"/></g><g fill="#9fbea7" opacity=".65"><path d="M40 620l35-105 35 105z"/><path d="M85 635l28-88 28 88z"/><path d="M315 610l32-96 32 96z"/></g></svg>`,
 `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844"><rect width="390" height="844" fill="#fff8e8"/><circle cx="320" cy="110" r="56" fill="#ffd98b" opacity=".38"/><g stroke="#b29b7c" stroke-width="2" opacity=".45"><path d="M0 120 Q130 80 390 130" fill="none"/></g><g fill="#ffc75c" opacity=".65"><circle cx="58" cy="105" r="8"/><circle cx="145" cy="94" r="8"/><circle cx="235" cy="100" r="8"/><circle cx="330" cy="120" r="8"/></g><path d="M0 650 Q110 590 205 645 T390 620V844H0Z" fill="#e5edd4"/><g opacity=".42"><rect x="242" y="285" width="112" height="115" rx="4" fill="#c9ad86"/><path d="M230 288l68-55 69 55z" fill="#9e835f"/></g><g fill="#b9d2ad" opacity=".55"><circle cx="40" cy="620" r="65"/><circle cx="350" cy="590" r="80"/></g></svg>`,
@@ -208,23 +347,33 @@ body{overflow:hidden}
 
   const params=new URLSearchParams(location.search);
   const incoming=params.get('device')||'';
+  const incomingLang=String(params.get('lang')||'').toLowerCase();
   if(incoming){
     try{localStorage.setItem('schoonmaak_device',incoming);}catch(e){}
+  }
+  if(['nl','en','es'].includes(incomingLang)){
+    try{localStorage.setItem('schoonmaak_lang',incomingLang);}catch(e){}
+  }
+  if(incoming || incomingLang){
     history.replaceState({},'',location.pathname);
   }
 
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
+  function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
   function getToken(){return getStored('schoonmaak_device');}
   function normalizeLang(lang){lang=String(lang||'').toLowerCase();return ['nl','en','es'].includes(lang)?lang:'';}
   function getAppLang(){return normalizeLang(getStored('schoonmaak_lang'));}
+  function getPendingLang(){return normalizeLang(getStored('schoonmaak_lang_pending'));}
   function setAppLang(lang){lang=normalizeLang(lang)||'nl';setStored('schoonmaak_lang',lang);return lang;}
   function targetUrl(){
     const token=getToken();
     const lang=getAppLang()||'nl';
+    const pending=getPendingLang();
     const params=[];
     if(token)params.push('device='+encodeURIComponent(token));
     params.push('lang='+encodeURIComponent(lang));
+    if(pending && pending===lang)params.push('langChange=1');
     params.push('launcherBuild='+encodeURIComponent(APP_IFRAME_BUILD));
     return BASE+'?'+params.join('&');
   }
@@ -260,12 +409,16 @@ body{overflow:hidden}
     document.getElementById('greeting').textContent=greetingFor(name||getStored('schoonmaak_name'));
     const day=dayOfYear(new Date());
     applyDailyBackground(day);
-    const r=riddles[day%riddles.length];
+    const langRiddles=riddlesByLang[lang]||riddles;
+    const langStatements=statementsByLang[lang]||statements;
+    const r=langRiddles[day%langRiddles.length];
     const prefix=lang==='en'?'Answer: ':lang==='es'?'Respuesta: ':'Antwoord: ';
     document.getElementById('riddleQ').textContent=r[0];
     document.getElementById('riddleA').textContent=prefix+r[1];
-    document.getElementById('statementText').textContent=statements[day%statements.length];
+    document.getElementById('statementText').textContent=langStatements[day%langStatements.length];
     applyLauncherLanguage();
+    const chooser=document.getElementById('languageChooser');
+    if(chooser)chooser.classList.toggle('saved',getStored('schoonmaak_lang_picker_done')==='2');
   }
 
   setPersonalSplash('');
@@ -279,15 +432,16 @@ body{overflow:hidden}
   });
 
   document.querySelectorAll('.language-btn').forEach(btn=>btn.addEventListener('click',function(){
-    const previous=getAppLang();
     const next=setAppLang(this.dataset.lang);
+    setStored('schoonmaak_lang_pending',next);
+    setStored('schoonmaak_lang_picker_done','2');
     applyLauncherLanguage();
     setPersonalSplash('');
-    if(started && previous && previous!==next){
+    if(started){
       location.reload();
       return;
     }
-    if(!started)startAppLoad();
+    startAppLoad();
   }));
 
   const frame=document.getElementById('appFrame');
@@ -378,6 +532,7 @@ body{overflow:hidden}
       const lang=normalizeLang(data.language);
       if(lang){
         setStored('schoonmaak_lang',lang);
+        if(getPendingLang()===lang)removeStored('schoonmaak_lang_pending');
         applyLauncherLanguage();
         setPersonalSplash('');
       }
@@ -387,6 +542,7 @@ body{overflow:hidden}
       const lang=normalizeLang(data.language);
       if(lang){
         setStored('schoonmaak_lang',lang);
+        if(getPendingLang()===lang)removeStored('schoonmaak_lang_pending');
         applyLauncherLanguage();
       }
       revealApp(String(data.name||''));
@@ -399,8 +555,17 @@ body{overflow:hidden}
 
   const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
   const savedLang=getAppLang();
-  if(savedLang){
+  const needsLanguageChoice=getStored('schoonmaak_lang_picker_done')!=='2';
+  if(needsLanguageChoice){
+    // Eenmalige duidelijke keuze vóór de app wordt gestart.
+    loadingLine.style.display='none';
+    openBtn.style.display='none';
+    const chooser=document.getElementById('languageChooser');
+    if(chooser)chooser.classList.remove('saved');
+  }else if(savedLang){
     applyLauncherLanguage();
+    const chooser=document.getElementById('languageChooser');
+    if(chooser)chooser.classList.add('saved');
     if(standalone){
       startAppLoad();
     }else{
@@ -409,7 +574,6 @@ body{overflow:hidden}
       openBtn.addEventListener('click',startAppLoad);
     }
   }else{
-    // Eerste keer: kies eerst NL / EN / SP. Pas daarna wordt Apps Script gestart.
     loadingLine.style.display='none';
     openBtn.style.display='none';
   }
