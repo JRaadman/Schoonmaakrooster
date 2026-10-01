@@ -99,7 +99,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-0930-v70diag';
+  const APP_IFRAME_BUILD='20261001-1030-v71';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -181,7 +181,26 @@ body{overflow:hidden}
   ];
 
   function applyDailyBackground(day){
-    const svg=backgroundSvgs[day%backgroundSvgs.length];
+    // Gebruik een duidelijk wisselend patroon en onthoud de keuze per kalenderdag.
+    // Zo kan iOS/PWA nooit per ongeluk de achtergrond van gisteren blijven tonen.
+    const now=new Date();
+    const dateKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    let index=(Number(day||0)*3)%backgroundSvgs.length;
+    try{
+      const savedDate=localStorage.getItem('schoonmaak_bg_date')||'';
+      const savedIndex=Number(localStorage.getItem('schoonmaak_bg_index'));
+      if(savedDate===dateKey && Number.isInteger(savedIndex) && savedIndex>=0 && savedIndex<backgroundSvgs.length){
+        index=savedIndex;
+      }else{
+        const previousIndex=Number(localStorage.getItem('schoonmaak_bg_index'));
+        if(Number.isInteger(previousIndex) && previousIndex===index){
+          index=(index+3)%backgroundSvgs.length;
+        }
+        localStorage.setItem('schoonmaak_bg_date',dateKey);
+        localStorage.setItem('schoonmaak_bg_index',String(index));
+      }
+    }catch(e){}
+    const svg=backgroundSvgs[index];
     const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
     const splash=document.getElementById('splash');
     splash.style.backgroundImage='linear-gradient(rgba(244,250,248,.06),rgba(250,252,251,.08)),url("'+url+'")';
