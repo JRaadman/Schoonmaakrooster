@@ -121,7 +121,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261001-2245-v96';
+  const APP_IFRAME_BUILD='20261002-2135-v97';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -502,13 +502,17 @@ body{overflow:hidden}
   const params=new URLSearchParams(location.search);
   const incoming=params.get('device')||'';
   const incomingLang=String(params.get('lang')||'').toLowerCase();
+  const incomingPushOpen=String(params.get('pushOpen')||'').trim();
   if(incoming){
     try{localStorage.setItem('schoonmaak_device',incoming);}catch(e){}
   }
   if(['nl','en','es','de','it'].includes(incomingLang)){
     try{localStorage.setItem('schoonmaak_lang',incomingLang);}catch(e){}
   }
-  if(incoming || incomingLang){
+  if(incomingPushOpen){
+    try{localStorage.setItem('schoonmaak_pending_push_open_v1',JSON.stringify({pushId:incomingPushOpen}));}catch(e){}
+  }
+  if(incoming || incomingLang || incomingPushOpen){
     history.replaceState({},'',location.pathname);
   }
 
@@ -766,12 +770,35 @@ body{overflow:hidden}
     if(!started)showOpenRosterButton_();
   }));
 
+  const PENDING_PUSH_OPEN_KEY='schoonmaak_pending_push_open_v1';
+  function savePendingPushOpen_(payload){
+    const data=payload||{};
+    if(!String(data.pushId||'').trim())return;
+    try{localStorage.setItem(PENDING_PUSH_OPEN_KEY,JSON.stringify(data));}catch(e){}
+  }
+  function loadPendingPushOpen_(){
+    try{return JSON.parse(localStorage.getItem(PENDING_PUSH_OPEN_KEY)||'null');}catch(e){return null;}
+  }
+  function clearPendingPushOpen_(pushId){
+    try{
+      const cur=loadPendingPushOpen_();
+      if(!cur)return;
+      if(!pushId||String(cur.pushId||'')===String(pushId||''))localStorage.removeItem(PENDING_PUSH_OPEN_KEY);
+    }catch(e){}
+  }
+
   const frame=document.getElementById('appFrame');
+  function deliverPendingPushOpen_(){
+    const pending=loadPendingPushOpen_();
+    if(!pending||!String(pending.pushId||'').trim())return;
+    try{frame.contentWindow.postMessage({type:'SCHOONMAAK_NOTIFICATION_CLICK',data:pending},'*');}catch(e){}
+  }
   if('serviceWorker' in navigator){
     navigator.serviceWorker.addEventListener('message',function(event){
       const data=event&&event.data||{};
       if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK'){
-        try{frame.contentWindow.postMessage({type:'SCHOONMAAK_NOTIFICATION_CLICK',data:data.data||{}},'*');}catch(e){}
+        savePendingPushOpen_(data.data||{});
+        deliverPendingPushOpen_();
       }
     });
   }
@@ -792,6 +819,7 @@ body{overflow:hidden}
       const lang=getAppLang()||'nl';
       setStartupStatus_(lang==='en'?'Loading schedule…':lang==='es'?'Cargando horario…':lang==='de'?'Plan wird geladen…':lang==='it'?'Caricamento turni…':'Rooster laden…');
     }
+    setTimeout(deliverPendingPushOpen_,300);
   });
 
   function startAppLoad(){
@@ -976,16 +1004,30 @@ body{overflow:hidden}
       }
       return;
     }
+    if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK_ACK'){
+      clearPendingPushOpen_(String(data.pushId||''));
+      return;
+    }
     if(data.type==='SCHOONMAAK_NOTIFY'){
       try{
         if('Notification' in window && Notification.permission==='granted' && 'serviceWorker' in navigator){
-          navigator.serviceWorker.ready.then(reg=>reg.showNotification(String(data.title||'Schoonmaakrooster'),{
-            body:String(data.body||''),
+          const title=String(data.title||'Schoonmaakrooster');
+          const body=String(data.body||'');
+          const notifyData=Object.assign({},data.data||{});
+          notifyData.title=notifyData.title||title;
+          notifyData.body=notifyData.body||body;
+          try{
+            const launch=new URL(location.href);
+            launch.searchParams.delete('pushOpen');
+            notifyData.url=launch.toString();
+          }catch(e){notifyData.url=notifyData.url||'./';}
+          navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,{
+            body:body,
             icon:'./app_icon_192.png',
             badge:'./app_icon_192.png',
             tag:String(data.tag||'schoonmaakrooster'),
             renotify:true,
-            data:data.data||{url:'./'}
+            data:notifyData
           })).catch(()=>{});
         }
       }catch(_){}
@@ -1009,6 +1051,8 @@ body{overflow:hidden}
         applyLauncherLanguage();
       }
       revealApp(String(data.name||''));
+      setTimeout(deliverPendingPushOpen_,120);
+      setTimeout(deliverPendingPushOpen_,900);
       return;
     }
     if(data.type==='SCHOONMAAK_ERROR'){
@@ -1036,6 +1080,10 @@ body{overflow:hidden}
   }else{
     loadingLine.style.display='none';
     openBtn.style.display='none';
+  }
+
+  if(loadPendingPushOpen_()&&String(loadPendingPushOpen_().pushId||'').trim()){
+    setTimeout(function(){if(!started)startAppLoad();},120);
   }
 })();
 </script>
