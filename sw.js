@@ -9,10 +9,17 @@ self.addEventListener('activate', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
-  const targetUrl =
-    (event.notification && event.notification.data && event.notification.data.url)
-      ? event.notification.data.url
-      : './';
+  const data = (event.notification && event.notification.data) || {};
+  let targetUrl = data.url || './';
+  const pushId = String(data.pushId || '').trim();
+
+  if (pushId) {
+    try {
+      const u = new URL(targetUrl, self.location.origin);
+      u.searchParams.set('pushOpen', pushId);
+      targetUrl = u.href;
+    } catch (e) {}
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
@@ -20,7 +27,7 @@ self.addEventListener('notificationclick', event => {
         if ('focus' in client) {
           client.postMessage({
             type: 'SCHOONMAAK_NOTIFICATION_CLICK',
-            data: event.notification.data || {}
+            data: data
           });
           return client.focus();
         }
