@@ -29,6 +29,9 @@ self.addEventListener('notificationclick', event => {
             type: 'SCHOONMAAK_NOTIFICATION_CLICK',
             data: data
           });
+          if ('navigate' in client) {
+            return client.navigate(targetUrl).then(() => client.focus()).catch(() => client.focus());
+          }
           return client.focus();
         }
       }
