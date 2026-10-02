@@ -121,7 +121,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261002-2155-v98';
+  const APP_IFRAME_BUILD='20261002-2208-v99';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -510,7 +510,7 @@ body{overflow:hidden}
     try{localStorage.setItem('schoonmaak_lang',incomingLang);}catch(e){}
   }
   if(incomingPushOpen){
-    try{localStorage.setItem('schoonmaak_pending_push_open_v1',JSON.stringify({pushId:incomingPushOpen}));}catch(e){}
+    try{localStorage.setItem('schoonmaak_pending_push_open_v1',JSON.stringify({pushId:incomingPushOpen,_savedAt:Date.now()}));}catch(e){}
   }
   if(incoming || incomingLang || incomingPushOpen){
     history.replaceState({},'',location.pathname);
@@ -771,13 +771,24 @@ body{overflow:hidden}
   }));
 
   const PENDING_PUSH_OPEN_KEY='schoonmaak_pending_push_open_v1';
+  const PENDING_PUSH_OPEN_MAX_AGE_MS=2*60*1000;
   function savePendingPushOpen_(payload){
-    const data=payload||{};
+    const data=Object.assign({},payload||{});
     if(!String(data.pushId||'').trim())return;
+    data._savedAt=Date.now();
     try{localStorage.setItem(PENDING_PUSH_OPEN_KEY,JSON.stringify(data));}catch(e){}
   }
   function loadPendingPushOpen_(){
-    try{return JSON.parse(localStorage.getItem(PENDING_PUSH_OPEN_KEY)||'null');}catch(e){return null;}
+    try{
+      const data=JSON.parse(localStorage.getItem(PENDING_PUSH_OPEN_KEY)||'null');
+      if(!data||!String(data.pushId||'').trim())return null;
+      const savedAt=Number(data._savedAt||0);
+      if(!savedAt||Date.now()-savedAt>PENDING_PUSH_OPEN_MAX_AGE_MS){
+        localStorage.removeItem(PENDING_PUSH_OPEN_KEY);
+        return null;
+      }
+      return data;
+    }catch(e){return null;}
   }
   function clearPendingPushOpen_(pushId){
     try{
