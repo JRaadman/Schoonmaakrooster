@@ -29,26 +29,49 @@ self.addEventListener('notificationclick', event => {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
 
     for (const client of clients) {
-      // App staat al open: NOOIT navigeren. Alleen naar voren halen en de
-      // klik meerdere keren doorgeven. Zo blijft het huidige rooster intact.
-      try { client.postMessage(payload); } catch (e) {}
-      try {
-        const channel = new BroadcastChannel('schoonmaak-push-open-v1');
-        channel.postMessage(payload);
-        channel.close();
-      } catch (e) {}
-
+      // Eerst proberen zonder herladen.
       let focused = client;
       try { focused = await client.focus() || client; } catch (e) {}
 
-      await new Promise(resolve => setTimeout(resolve, 180));
-      try { focused.postMessage(payload); } catch (e) {}
-      await new Promise(resolve => setTimeout(resolve, 550));
-      try { focused.postMessage(payload); } catch (e) {}
+      let acked = false;
+      try {
+        const channel = new MessageChannel();
+        const ackPromise = new Promise(resolve => {
+          let done = false;
+          const finish = value => {
+            if(done) return;
+            done = true;
+            resolve(value);
+          };
+          channel.port1.onmessage = () => finish(true);
+          setTimeout(() => finish(false), 900);
+        });
+        focused.postMessage(payload, [channel.port2]);
+        acked = await ackPromise;
+        try{channel.port1.close();}catch(e){}
+      } catch (e) {}
+
+      if (acked) {
+        // Launcher heeft de klik ontvangen; geen reload nodig.
+        return;
+      }
+
+      // Fallback: als de achtergrond-app de postMessage niet heeft ontvangen,
+      // navigeer dezelfde PWA pas dan met de pushgegevens in de URL.
+      if ('navigate' in focused) {
+        try {
+          const navigated = await focused.navigate(targetUrl);
+          if (navigated && 'focus' in navigated) await navigated.focus();
+          return;
+        } catch (e) {}
+      }
+
+      // Laatste redmiddel.
+      try { await self.clients.openWindow(targetUrl); } catch (e) {}
       return;
     }
 
-    // Alleen als er echt geen appvenster meer bestaat starten we de PWA opnieuw.
+    // App echt gesloten: normaal opnieuw openen.
     await self.clients.openWindow(targetUrl);
   })());
 });
