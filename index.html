@@ -116,14 +116,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261003-1835-v111',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261003-1925-v112',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1835-v111';
+  const APP_IFRAME_BUILD='20261003-1925-v112';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -1043,7 +1043,7 @@ body{overflow:hidden}
 
 
   let oneSignalInitPromise=null;
-  let oneSignalConfig={appId:'',externalId:'',language:'nl'};
+  let oneSignalConfig={appId:'',externalId:'',language:'nl',subscribe:false};
 
   function sendPushStatusToApp_(status){
     try{
@@ -1051,13 +1051,40 @@ body{overflow:hidden}
     }catch(e){}
   }
 
+  function oneSignalStatus_(OneSignal){
+    let supported=false;
+    try{supported=!!OneSignal.Notifications.isPushSupported();}catch(e){}
+    let permission='default';
+    try{
+      permission=String(OneSignal.Notifications.permissionNative||'').toLowerCase();
+      if(!permission||!['default','granted','denied'].includes(permission)){
+        permission=OneSignal.Notifications.permission===true?'granted':(Notification.permission||'default');
+      }
+    }catch(e){
+      try{permission=Notification.permission||'default';}catch(_){}
+    }
+    let optedIn=false;
+    let subscriptionId='';
+    try{optedIn=!!OneSignal.User.PushSubscription.optedIn;}catch(e){}
+    try{subscriptionId=String(OneSignal.User.PushSubscription.id||'');}catch(e){}
+    return {
+      supported,
+      permission,
+      optedIn,
+      subscriptionId,
+      externalId:String(oneSignalConfig.externalId||''),
+      cloudReady:supported&&permission==='granted'&&optedIn&&!!subscriptionId
+    };
+  }
+
   function ensureOneSignal_(cfg){
     cfg=cfg||{};
     const appId=String(cfg.appId||'').trim();
     const externalId=String(cfg.externalId||'').trim();
     const language=normalizeLang(cfg.language)||getAppLang()||'nl';
+    const subscribe=cfg.subscribe===true;
     if(!appId||!externalId)return Promise.resolve(null);
-    oneSignalConfig={appId,externalId,language};
+    oneSignalConfig={appId,externalId,language,subscribe};
     if(oneSignalInitPromise)return oneSignalInitPromise;
     window.OneSignalDeferred=window.OneSignalDeferred||[];
     oneSignalInitPromise=new Promise(resolve=>{
@@ -1066,7 +1093,7 @@ body{overflow:hidden}
           await OneSignal.init({
             appId: appId,
             autoResubscribe: true,
-            serviceWorkerPath: '/Schoonmaakrooster/push/onesignal/OneSignalSDKWorker.js',
+            serviceWorkerPath: 'push/onesignal/OneSignalSDKWorker.js',
             serviceWorkerParam: {scope:'/Schoonmaakrooster/push/onesignal/'},
             welcomeNotification: {disable:true},
             notificationClickHandlerMatch:'origin',
@@ -1074,30 +1101,75 @@ body{overflow:hidden}
           });
           await OneSignal.login(externalId);
           try{OneSignal.User.setLanguage(language);}catch(e){}
+
+          // Bestaande telefoons hebben de native toestemming al gegeven.
+          // Maak dan ook de echte OneSignal web-pushsubscription aan zonder
+          // opnieuw een eigen permissiedialoog te tonen.
+          if(oneSignalConfig.subscribe===true){
+            try{
+              const nativePermission=String(Notification.permission||'default');
+              if(nativePermission==='granted'&&!OneSignal.User.PushSubscription.optedIn){
+                await OneSignal.User.PushSubscription.optIn();
+              }
+            }catch(e){}
+          }
+
+          try{
+            OneSignal.Notifications.addEventListener('foregroundWillDisplay',function(event){
+              const n=(event&&event.notification)||{};
+              const additional=Object.assign({},n.additionalData||n.data||{});
+              additional.title=n.title||additional.title||'';
+              additional.body=n.body||additional.body||'';
+
+              // Staat het rooster echt in beeld, dan geen dubbele iOS-banner.
+              // De mobiele app verwerkt dezelfde push meteen in-app.
+              if(document.visibilityState==='visible'){
+                try{event.preventDefault();}catch(e){}
+                try{
+                  frame.contentWindow.postMessage({
+                    type:'SCHOONMAAK_CLOUD_FOREGROUND',
+                    data:additional
+                  },'*');
+                }catch(e){}
+              }
+            });
+          }catch(e){}
+
           try{
             OneSignal.Notifications.addEventListener('click',function(event){
               const n=(event&&event.notification)||{};
               const additional=(n.additionalData||n.data||{});
               const pushId=String(additional.pushId||'').trim();
               if(pushId){
-                savePendingPushOpen_(Object.assign({},additional,{pushId:pushId,title:n.title||additional.title||'',body:n.body||additional.body||''}));
+                savePendingPushOpen_(Object.assign({},additional,{
+                  pushId:pushId,
+                  title:n.title||additional.title||'',
+                  body:n.body||additional.body||''
+                }));
                 deliverPendingPushOpen_();
               }
             });
           }catch(e){}
+
           try{
             OneSignal.User.PushSubscription.addEventListener('change',function(){
-              sendPushStatusToApp_({
-                supported:OneSignal.Notifications.isPushSupported(),
-                permission:OneSignal.Notifications.permission===true?'granted':(Notification.permission||'default'),
-                optedIn:!!OneSignal.User.PushSubscription.optedIn
-              });
+              sendPushStatusToApp_(oneSignalStatus_(OneSignal));
             });
           }catch(e){}
+
+          sendPushStatusToApp_(oneSignalStatus_(OneSignal));
           resolve(OneSignal);
         }catch(err){
           oneSignalInitPromise=null;
-          sendPushStatusToApp_({supported:false,permission:'error',optedIn:false,error:String(err&&err.message||err||'')});
+          sendPushStatusToApp_({
+            supported:false,
+            permission:'error',
+            optedIn:false,
+            subscriptionId:'',
+            externalId:String(externalId||''),
+            cloudReady:false,
+            error:String(err&&err.message||err||'')
+          });
           resolve(null);
         }
       });
@@ -1108,35 +1180,50 @@ body{overflow:hidden}
   async function reportPushStatus_(){
     const OneSignal=await ensureOneSignal_(oneSignalConfig);
     if(!OneSignal){
-      sendPushStatusToApp_({supported:false,permission:'unavailable',optedIn:false});
+      sendPushStatusToApp_({
+        supported:false,
+        permission:'unavailable',
+        optedIn:false,
+        subscriptionId:'',
+        externalId:String(oneSignalConfig.externalId||''),
+        cloudReady:false
+      });
       return;
     }
-    let supported=false;
-    try{supported=!!OneSignal.Notifications.isPushSupported();}catch(e){}
-    let permission='default';
-    try{permission=OneSignal.Notifications.permission===true?'granted':(Notification.permission||'default');}catch(e){}
-    let optedIn=false;
-    try{optedIn=!!OneSignal.User.PushSubscription.optedIn;}catch(e){}
-    sendPushStatusToApp_({supported,permission,optedIn});
+    sendPushStatusToApp_(oneSignalStatus_(OneSignal));
   }
 
   async function subscribePush_(){
+    oneSignalConfig.subscribe=true;
     const OneSignal=await ensureOneSignal_(oneSignalConfig);
     if(!OneSignal){await reportPushStatus_();return;}
     try{
       if(!OneSignal.Notifications.isPushSupported()){
-        sendPushStatusToApp_({supported:false,permission:'unsupported',optedIn:false});
+        sendPushStatusToApp_({
+          supported:false,
+          permission:'unsupported',
+          optedIn:false,
+          subscriptionId:'',
+          externalId:String(oneSignalConfig.externalId||''),
+          cloudReady:false
+        });
         return;
       }
       await OneSignal.login(oneSignalConfig.externalId);
       try{OneSignal.User.setLanguage(oneSignalConfig.language);}catch(e){}
-      await OneSignal.Notifications.requestPermission();
+      if(String(Notification.permission||'default')!=='granted'){
+        await OneSignal.Notifications.requestPermission();
+      }
       try{await OneSignal.User.PushSubscription.optIn();}catch(e){}
     }catch(e){}
+    // iOS kan het subscription-id net iets later opleveren.
     await reportPushStatus_();
+    setTimeout(reportPushStatus_,700);
+    setTimeout(reportPushStatus_,1800);
   }
 
   async function unsubscribePush_(){
+    oneSignalConfig.subscribe=false;
     const OneSignal=await ensureOneSignal_(oneSignalConfig);
     if(!OneSignal){await reportPushStatus_();return;}
     try{await OneSignal.User.PushSubscription.optOut();}catch(e){}
@@ -1169,9 +1256,19 @@ body{overflow:hidden}
       oneSignalConfig={
         appId:String(data.appId||'').trim(),
         externalId:String(data.externalId||'').trim(),
-        language:normalizeLang(data.language)||getAppLang()||'nl'
+        language:normalizeLang(data.language)||getAppLang()||'nl',
+        subscribe:data.subscribe===true
       };
-      ensureOneSignal_(oneSignalConfig).then(()=>reportPushStatus_());
+      ensureOneSignal_(oneSignalConfig).then(async OneSignal=>{
+        if(OneSignal&&oneSignalConfig.subscribe===true){
+          try{
+            if(String(Notification.permission||'default')==='granted'&&!OneSignal.User.PushSubscription.optedIn){
+              await OneSignal.User.PushSubscription.optIn();
+            }
+          }catch(e){}
+        }
+        reportPushStatus_();
+      });
       return;
     }
     if(data.type==='SCHOONMAAK_PUSH_STATUS_REQUEST'){
