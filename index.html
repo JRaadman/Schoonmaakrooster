@@ -121,7 +121,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261002-2325-v102';
+  const APP_IFRAME_BUILD='20261003-1120-v102';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -917,6 +917,17 @@ body{overflow:hidden}
           await OneSignal.login(externalId);
           try{OneSignal.User.setLanguage(language);}catch(e){}
           try{
+            OneSignal.Notifications.addEventListener('click',function(event){
+              const n=(event&&event.notification)||{};
+              const additional=(n.additionalData||n.data||{});
+              const pushId=String(additional.pushId||'').trim();
+              if(pushId){
+                savePendingPushOpen_(Object.assign({},additional,{pushId:pushId,title:n.title||additional.title||'',body:n.body||additional.body||''}));
+                deliverPendingPushOpen_();
+              }
+            });
+          }catch(e){}
+          try{
             OneSignal.User.PushSubscription.addEventListener('change',function(){
               sendPushStatusToApp_({
                 supported:OneSignal.Notifications.isPushSupported(),
@@ -967,6 +978,13 @@ body{overflow:hidden}
     await reportPushStatus_();
   }
 
+  async function unsubscribePush_(){
+    const OneSignal=await ensureOneSignal_(oneSignalConfig);
+    if(!OneSignal){await reportPushStatus_();return;}
+    try{await OneSignal.User.PushSubscription.optOut();}catch(e){}
+    await reportPushStatus_();
+  }
+
   window.addEventListener('message',function(e){
     const data=e.data||{};
     if(data.type==='SCHOONMAAK_NOTIFICATION_STATUS_REQUEST'){
@@ -1004,6 +1022,10 @@ body{overflow:hidden}
     }
     if(data.type==='SCHOONMAAK_PUSH_SUBSCRIBE'){
       subscribePush_();
+      return;
+    }
+    if(data.type==='SCHOONMAAK_PUSH_UNSUBSCRIBE'){
+      unsubscribePush_();
       return;
     }
     if(data.type==='SCHOONMAAK_DIAG'){
