@@ -25,16 +25,19 @@ self.addEventListener('notificationclick', event => {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
       for (const client of clients) {
         if ('focus' in client) {
+          // Als de app al open staat: niet opnieuw navigeren/herladen.
+          // Alleen focussen en de klik doorgeven, zodat het bericht direct
+          // in de bestaande app kan worden geopend en bewaard.
           client.postMessage({
             type: 'SCHOONMAAK_NOTIFICATION_CLICK',
             data: data
           });
-          if ('navigate' in client) {
-            return client.navigate(targetUrl).then(() => client.focus()).catch(() => client.focus());
-          }
           return client.focus();
         }
       }
+      // Alleen wanneer de app echt dicht is openen we een nieuw venster.
+      // pushOpen zorgt dat de launcher de melding na het opstarten alsnog
+      // aan de mobiele app doorgeeft.
       return self.clients.openWindow(targetUrl);
     })
   );
