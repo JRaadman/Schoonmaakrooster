@@ -121,7 +121,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1635-v103';
+  const APP_IFRAME_BUILD='20261003-1704-v104';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -809,7 +809,13 @@ body{overflow:hidden}
       const data=event&&event.data||{};
       if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK'){
         savePendingPushOpen_(data.data||{});
+        // De app kan op mobiel net uit de achtergrond komen. Geef dezelfde klik
+        // daarom meerdere keren door totdat de app met een ACK bevestigt.
         deliverPendingPushOpen_();
+        setTimeout(deliverPendingPushOpen_,180);
+        setTimeout(deliverPendingPushOpen_,700);
+        setTimeout(deliverPendingPushOpen_,1600);
+        if(!started)setTimeout(function(){if(!started)startAppLoad();},30);
       }
     });
   }
