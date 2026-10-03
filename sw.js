@@ -17,6 +17,9 @@ self.addEventListener('notificationclick', event => {
     try {
       const u = new URL(targetUrl, self.location.origin);
       u.searchParams.set('pushOpen', pushId);
+      if (String(data.title || '')) u.searchParams.set('pushTitle', String(data.title || ''));
+      if (String(data.body || '')) u.searchParams.set('pushBody', String(data.body || ''));
+      if (String(data.day || '')) u.searchParams.set('pushDay', String(data.day || ''));
       targetUrl = u.href;
     } catch (e) {}
   }
@@ -24,24 +27,25 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil((async () => {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of clients) {
+      if ('navigate' in client) {
+        // Betrouwbare route: geef pushgegevens via de launcher-URL door.
+        // De launcher zet ze in localStorage en vervolgens ook in de iframe-URL.
+        try {
+          const navigated = await client.navigate(targetUrl);
+          if (navigated && 'focus' in navigated) await navigated.focus();
+          else if ('focus' in client) await client.focus();
+        } catch (e) {
+          if ('focus' in client) {
+            try { await client.focus(); } catch (_) {}
+          }
+        }
+        return;
+      }
       if ('focus' in client) {
-        // Eerst naar voren halen en daarna de klik nogmaals doorgeven.
-        // Op iOS/Android kan een pagina uit de achtergrond een vroege
-        // postMessage missen; meerdere pogingen maken dit betrouwbaar.
-        let focused = client;
-        try { focused = await client.focus() || client; } catch (e) {}
-        const payload = { type: 'SCHOONMAAK_NOTIFICATION_CLICK', data: data };
-        try { focused.postMessage(payload); } catch (e) {}
-        await new Promise(resolve => setTimeout(resolve, 180));
-        try { focused.postMessage(payload); } catch (e) {}
-        await new Promise(resolve => setTimeout(resolve, 650));
-        try { focused.postMessage(payload); } catch (e) {}
+        try { await client.focus(); } catch (e) {}
         return;
       }
     }
-    // Alleen wanneer de app echt dicht is openen we een nieuw venster.
-    // pushOpen zorgt dat de launcher de melding na het opstarten alsnog
-    // aan de mobiele app doorgeeft.
     await self.clients.openWindow(targetUrl);
   })());
 });
