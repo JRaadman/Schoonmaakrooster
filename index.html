@@ -116,14 +116,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261003-1718-v107',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261003-1735-v108',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1718-v107';
+  const APP_IFRAME_BUILD='20261003-1735-v108';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -858,7 +858,14 @@ body{overflow:hidden}
     navigator.serviceWorker.addEventListener('message',function(event){
       const data=event&&event.data||{};
       if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK'){
+        const port=(event.ports&&event.ports[0])||null;
         receivePushClick_(data.data||{});
+        // Bevestig meteen dat de launcher de klik heeft ontvangen.
+        // De mobiele app verwerkt dezelfde melding daarna via de bestaande
+        // retry/ACK-route; zo hoeft de PWA niet opnieuw te laden.
+        if(port){
+          try{port.postMessage({ok:true,pushId:String(data.data&&data.data.pushId||'')});}catch(e){}
+        }
       }
     });
   }
