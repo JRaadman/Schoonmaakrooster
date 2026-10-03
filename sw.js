@@ -21,26 +21,29 @@ self.addEventListener('notificationclick', event => {
     } catch (e) {}
   }
 
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-      for (const client of clients) {
-        if ('focus' in client) {
-          // Als de app al open staat: niet opnieuw navigeren/herladen.
-          // Alleen focussen en de klik doorgeven, zodat het bericht direct
-          // in de bestaande app kan worden geopend en bewaard.
-          client.postMessage({
-            type: 'SCHOONMAAK_NOTIFICATION_CLICK',
-            data: data
-          });
-          return client.focus();
-        }
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clients) {
+      if ('focus' in client) {
+        // Eerst naar voren halen en daarna de klik nogmaals doorgeven.
+        // Op iOS/Android kan een pagina uit de achtergrond een vroege
+        // postMessage missen; meerdere pogingen maken dit betrouwbaar.
+        let focused = client;
+        try { focused = await client.focus() || client; } catch (e) {}
+        const payload = { type: 'SCHOONMAAK_NOTIFICATION_CLICK', data: data };
+        try { focused.postMessage(payload); } catch (e) {}
+        await new Promise(resolve => setTimeout(resolve, 180));
+        try { focused.postMessage(payload); } catch (e) {}
+        await new Promise(resolve => setTimeout(resolve, 650));
+        try { focused.postMessage(payload); } catch (e) {}
+        return;
       }
-      // Alleen wanneer de app echt dicht is openen we een nieuw venster.
-      // pushOpen zorgt dat de launcher de melding na het opstarten alsnog
-      // aan de mobiele app doorgeeft.
-      return self.clients.openWindow(targetUrl);
-    })
-  );
+    }
+    // Alleen wanneer de app echt dicht is openen we een nieuw venster.
+    // pushOpen zorgt dat de launcher de melding na het opstarten alsnog
+    // aan de mobiele app doorgeeft.
+    await self.clients.openWindow(targetUrl);
+  })());
 });
 
 self.addEventListener('message', event => {
