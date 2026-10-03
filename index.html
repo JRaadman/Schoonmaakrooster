@@ -116,12 +116,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js').catch(function(){});
+      navigator.serviceWorker.register('./sw.js?v=20261003-1704-v105',{updateViaCache:'none'}).then(function(reg){
+        try{reg.update();}catch(e){}
+      }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1704-v104';
+  const APP_IFRAME_BUILD='20261003-1704-v105';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -503,6 +505,9 @@ body{overflow:hidden}
   const incoming=params.get('device')||'';
   const incomingLang=String(params.get('lang')||'').toLowerCase();
   const incomingPushOpen=String(params.get('pushOpen')||'').trim();
+  const incomingPushTitle=String(params.get('pushTitle')||'');
+  const incomingPushBody=String(params.get('pushBody')||'');
+  const incomingPushDay=String(params.get('pushDay')||'');
   if(incoming){
     try{localStorage.setItem('schoonmaak_device',incoming);}catch(e){}
   }
@@ -510,7 +515,13 @@ body{overflow:hidden}
     try{localStorage.setItem('schoonmaak_lang',incomingLang);}catch(e){}
   }
   if(incomingPushOpen){
-    try{localStorage.setItem('schoonmaak_pending_push_open_v1',JSON.stringify({pushId:incomingPushOpen,_savedAt:Date.now()}));}catch(e){}
+    try{localStorage.setItem('schoonmaak_pending_push_open_v1',JSON.stringify({
+      pushId:incomingPushOpen,
+      title:incomingPushTitle,
+      body:incomingPushBody,
+      day:incomingPushDay,
+      _savedAt:Date.now()
+    }));}catch(e){}
   }
   if(incoming || incomingLang || incomingPushOpen){
     history.replaceState({},'',location.pathname);
@@ -532,6 +543,13 @@ body{overflow:hidden}
     if(token)params.push('device='+encodeURIComponent(token));
     params.push('lang='+encodeURIComponent(lang));
     if(pending && pending===lang)params.push('langChange=1');
+    const push=loadPendingPushOpen_();
+    if(push&&String(push.pushId||'').trim()){
+      params.push('pushOpen='+encodeURIComponent(String(push.pushId||'')));
+      if(String(push.title||''))params.push('pushTitle='+encodeURIComponent(String(push.title||'')));
+      if(String(push.body||''))params.push('pushBody='+encodeURIComponent(String(push.body||'')));
+      if(String(push.day||''))params.push('pushDay='+encodeURIComponent(String(push.day||'')));
+    }
     params.push('launcherBuild='+encodeURIComponent(APP_IFRAME_BUILD));
     return BASE+'?'+params.join('&');
   }
