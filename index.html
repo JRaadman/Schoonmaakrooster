@@ -116,14 +116,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261003-1704-v105',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261003-1718-v107',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1704-v105';
+  const APP_IFRAME_BUILD='20261003-1718-v107';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -817,26 +817,74 @@ body{overflow:hidden}
   }
 
   const frame=document.getElementById('appFrame');
+
   function deliverPendingPushOpen_(){
     const pending=loadPendingPushOpen_();
-    if(!pending||!String(pending.pushId||'').trim())return;
-    try{frame.contentWindow.postMessage({type:'SCHOONMAAK_NOTIFICATION_CLICK',data:pending},'*');}catch(e){}
+    if(!pending||!String(pending.pushId||'').trim())return false;
+    try{
+      frame.contentWindow.postMessage({type:'SCHOONMAAK_NOTIFICATION_CLICK',data:pending},'*');
+      return true;
+    }catch(e){return false;}
   }
+
+  let pendingPushRetryTimers=[];
+  function cancelPendingPushRetries_(){
+    pendingPushRetryTimers.forEach(function(id){try{clearTimeout(id);}catch(e){}});
+    pendingPushRetryTimers=[];
+  }
+  function schedulePendingPushDelivery_(){
+    if(!loadPendingPushOpen_())return;
+    cancelPendingPushRetries_();
+    [0,120,320,700,1200,2000,3200,4800].forEach(function(delay){
+      const id=setTimeout(function(){
+        if(!loadPendingPushOpen_())return;
+        deliverPendingPushOpen_();
+      },delay);
+      pendingPushRetryTimers.push(id);
+    });
+  }
+  function receivePushClick_(payload){
+    const data=payload||{};
+    if(!String(data.pushId||'').trim())return;
+    savePendingPushOpen_(data);
+    // Een echte pushklik mag de app openen wanneer alleen het startscherm zichtbaar is.
+    if(!started){
+      setTimeout(function(){if(!started)startAppLoad();},20);
+    }
+    schedulePendingPushDelivery_();
+  }
+
   if('serviceWorker' in navigator){
     navigator.serviceWorker.addEventListener('message',function(event){
       const data=event&&event.data||{};
       if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK'){
-        savePendingPushOpen_(data.data||{});
-        // De app kan op mobiel net uit de achtergrond komen. Geef dezelfde klik
-        // daarom meerdere keren door totdat de app met een ACK bevestigt.
-        deliverPendingPushOpen_();
-        setTimeout(deliverPendingPushOpen_,180);
-        setTimeout(deliverPendingPushOpen_,700);
-        setTimeout(deliverPendingPushOpen_,1600);
-        if(!started)setTimeout(function(){if(!started)startAppLoad();},30);
+        receivePushClick_(data.data||{});
       }
     });
   }
+
+  // Extra kanaal naast postMessage. Dit helpt vooral wanneer een geïnstalleerde
+  // PWA net vanuit de achtergrond wordt hervat.
+  try{
+    const pushClickChannel=new BroadcastChannel('schoonmaak-push-open-v1');
+    pushClickChannel.addEventListener('message',function(event){
+      const data=event&&event.data||{};
+      if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK'){
+        receivePushClick_(data.data||{});
+      }
+    });
+  }catch(e){}
+
+  window.addEventListener('focus',function(){
+    if(loadPendingPushOpen_())schedulePendingPushDelivery_();
+  });
+  window.addEventListener('pageshow',function(){
+    if(loadPendingPushOpen_())schedulePendingPushDelivery_();
+  });
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&loadPendingPushOpen_())schedulePendingPushDelivery_();
+  });
+
   const splash=document.getElementById('splash');
   const openBtn=document.getElementById('openBtn');
   const loadingLine=document.getElementById('loadingLine');
@@ -854,7 +902,7 @@ body{overflow:hidden}
       const lang=getAppLang()||'nl';
       setStartupStatus_(lang==='en'?'Loading schedule…':lang==='es'?'Cargando horario…':lang==='de'?'Plan wird geladen…':lang==='it'?'Caricamento turni…':'Rooster laden…');
     }
-    setTimeout(deliverPendingPushOpen_,300);
+    if(loadPendingPushOpen_())schedulePendingPushDelivery_();
   });
 
   function startAppLoad(){
@@ -1063,6 +1111,7 @@ body{overflow:hidden}
     }
     if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK_ACK'){
       clearPendingPushOpen_(String(data.pushId||''));
+      cancelPendingPushRetries_();
       return;
     }
     if(data.type==='SCHOONMAAK_NOTIFY'){
@@ -1131,8 +1180,7 @@ body{overflow:hidden}
         applyLauncherLanguage();
       }
       revealApp(String(data.name||''));
-      setTimeout(deliverPendingPushOpen_,120);
-      setTimeout(deliverPendingPushOpen_,900);
+      if(loadPendingPushOpen_())schedulePendingPushDelivery_();
       return;
     }
     if(data.type==='SCHOONMAAK_ERROR'){
