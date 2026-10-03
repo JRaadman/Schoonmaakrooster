@@ -25,27 +25,30 @@ self.addEventListener('notificationclick', event => {
   }
 
   event.waitUntil((async () => {
+    const payload = { type: 'SCHOONMAAK_NOTIFICATION_CLICK', data: data };
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
     for (const client of clients) {
-      if ('navigate' in client) {
-        // Betrouwbare route: geef pushgegevens via de launcher-URL door.
-        // De launcher zet ze in localStorage en vervolgens ook in de iframe-URL.
-        try {
-          const navigated = await client.navigate(targetUrl);
-          if (navigated && 'focus' in navigated) await navigated.focus();
-          else if ('focus' in client) await client.focus();
-        } catch (e) {
-          if ('focus' in client) {
-            try { await client.focus(); } catch (_) {}
-          }
-        }
-        return;
-      }
-      if ('focus' in client) {
-        try { await client.focus(); } catch (e) {}
-        return;
-      }
+      // App staat al open: NOOIT navigeren. Alleen naar voren halen en de
+      // klik meerdere keren doorgeven. Zo blijft het huidige rooster intact.
+      try { client.postMessage(payload); } catch (e) {}
+      try {
+        const channel = new BroadcastChannel('schoonmaak-push-open-v1');
+        channel.postMessage(payload);
+        channel.close();
+      } catch (e) {}
+
+      let focused = client;
+      try { focused = await client.focus() || client; } catch (e) {}
+
+      await new Promise(resolve => setTimeout(resolve, 180));
+      try { focused.postMessage(payload); } catch (e) {}
+      await new Promise(resolve => setTimeout(resolve, 550));
+      try { focused.postMessage(payload); } catch (e) {}
+      return;
     }
+
+    // Alleen als er echt geen appvenster meer bestaat starten we de PWA opnieuw.
     await self.clients.openWindow(targetUrl);
   })());
 });
