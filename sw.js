@@ -44,7 +44,7 @@ self.addEventListener('notificationclick', event => {
             resolve(value);
           };
           channel.port1.onmessage = () => finish(true);
-          setTimeout(() => finish(false), 2200);
+          setTimeout(() => finish(false), 7000);
         });
         focused.postMessage(payload, [channel.port2]);
         acked = await ackPromise;
