@@ -116,14 +116,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261003-1810-v110',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261003-1835-v111',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1810-v110';
+  const APP_IFRAME_BUILD='20261003-1835-v111';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -790,6 +790,59 @@ body{overflow:hidden}
 
   const PENDING_PUSH_OPEN_KEY='schoonmaak_pending_push_open_v1';
   const PENDING_PUSH_OPEN_MAX_AGE_MS=2*60*1000;
+
+  // Betrouwbare brug tussen de serviceworker en een reeds geopende PWA.
+  // De serviceworker bewaart een klik eerst persistent in IndexedDB. Daardoor
+  // kan de launcher hem na hervatten zelf ophalen; er kan geen postMessage
+  // verloren gaan doordat iOS/Android de pagina nog aan het wakker maken is.
+  const PUSH_CLICK_DB='schoonmaak_push_click_bridge_v1';
+  const PUSH_CLICK_STORE='kv';
+  const PUSH_CLICK_KEY='pending';
+
+  function openPushClickDb_(){
+    return new Promise((resolve,reject)=>{
+      try{
+        const req=indexedDB.open(PUSH_CLICK_DB,1);
+        req.onupgradeneeded=()=>{
+          const db=req.result;
+          if(!db.objectStoreNames.contains(PUSH_CLICK_STORE))db.createObjectStore(PUSH_CLICK_STORE);
+        };
+        req.onsuccess=()=>resolve(req.result);
+        req.onerror=()=>reject(req.error||new Error('indexeddb-open-failed'));
+      }catch(err){reject(err);}
+    });
+  }
+  async function readStoredPushClick_(){
+    try{
+      const db=await openPushClickDb_();
+      const rec=await new Promise((resolve,reject)=>{
+        const tx=db.transaction(PUSH_CLICK_STORE,'readonly');
+        const req=tx.objectStore(PUSH_CLICK_STORE).get(PUSH_CLICK_KEY);
+        req.onsuccess=()=>resolve(req.result||null);
+        req.onerror=()=>reject(req.error||new Error('indexeddb-read-failed'));
+      });
+      try{db.close();}catch(e){}
+      if(!rec||!rec.data||!String(rec.data.pushId||'').trim())return null;
+      const savedAt=Number(rec.savedAt||0);
+      if(!savedAt||Date.now()-savedAt>PENDING_PUSH_OPEN_MAX_AGE_MS){
+        await clearStoredPushClick_();
+        return null;
+      }
+      return rec.data;
+    }catch(e){return null;}
+  }
+  async function clearStoredPushClick_(){
+    try{
+      const db=await openPushClickDb_();
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction(PUSH_CLICK_STORE,'readwrite');
+        const req=tx.objectStore(PUSH_CLICK_STORE).delete(PUSH_CLICK_KEY);
+        req.onsuccess=()=>resolve();
+        req.onerror=()=>reject(req.error||new Error('indexeddb-delete-failed'));
+      });
+      try{db.close();}catch(e){}
+    }catch(e){}
+  }
   function savePendingPushOpen_(payload){
     const data=Object.assign({},payload||{});
     if(!String(data.pushId||'').trim())return;
@@ -854,26 +907,42 @@ body{overflow:hidden}
     schedulePendingPushDelivery_();
   }
 
-  const pendingPushClickAckPorts=new Map();
+  let storedPushPullBusy=false;
+  let storedPushPullTimers=[];
+
+  async function pullStoredPushClick_(){
+    if(storedPushPullBusy)return;
+    storedPushPullBusy=true;
+    try{
+      const payload=await readStoredPushClick_();
+      if(payload&&String(payload.pushId||'').trim()){
+        // Eerst lokaal veiligstellen, pas daarna uit IndexedDB verwijderen.
+        receivePushClick_(payload);
+        await clearStoredPushClick_();
+      }
+    }finally{
+      storedPushPullBusy=false;
+    }
+  }
+  function scheduleStoredPushPull_(){
+    storedPushPullTimers.forEach(id=>{try{clearTimeout(id);}catch(e){}});
+    storedPushPullTimers=[];
+    [0,100,300,700,1300,2200,3500].forEach(delay=>{
+      storedPushPullTimers.push(setTimeout(pullStoredPushClick_,delay));
+    });
+  }
 
   if('serviceWorker' in navigator){
     navigator.serviceWorker.addEventListener('message',function(event){
       const data=event&&event.data||{};
       if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK'){
-        const pushId=String(data.data&&data.data.pushId||'').trim();
-        const port=(event.ports&&event.ports[0])||null;
-        if(pushId&&port){
-          pendingPushClickAckPorts.set(pushId,port);
-          try{port.start&&port.start();}catch(e){}
-        }
+        // Direct pad als het toestel al wakker genoeg is.
         receivePushClick_(data.data||{});
-        // Belangrijk: nog GEEN bevestiging naar de serviceworker sturen.
-        // Pas wanneer de mobiele app de melding echt heeft geopend, sturen
-        // we de ACK terug. Anders zou de fallback te vroeg worden gestopt.
+        // En altijd ook de persistente brug controleren.
+        scheduleStoredPushPull_();
       }
     });
   }
-
   // Extra kanaal naast postMessage. Dit helpt vooral wanneer een geïnstalleerde
   // PWA net vanuit de achtergrond wordt hervat.
   try{
@@ -887,14 +956,20 @@ body{overflow:hidden}
   }catch(e){}
 
   window.addEventListener('focus',function(){
+    scheduleStoredPushPull_();
     if(loadPendingPushOpen_())schedulePendingPushDelivery_();
   });
   window.addEventListener('pageshow',function(){
+    scheduleStoredPushPull_();
     if(loadPendingPushOpen_())schedulePendingPushDelivery_();
   });
   document.addEventListener('visibilitychange',function(){
-    if(document.visibilityState==='visible'&&loadPendingPushOpen_())schedulePendingPushDelivery_();
+    if(document.visibilityState==='visible'){
+      scheduleStoredPushPull_();
+      if(loadPendingPushOpen_())schedulePendingPushDelivery_();
+    }
   });
+  setTimeout(scheduleStoredPushPull_,150);
 
   const splash=document.getElementById('splash');
   const openBtn=document.getElementById('openBtn');
@@ -1122,13 +1197,8 @@ body{overflow:hidden}
     }
     if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK_ACK'){
       const pushId=String(data.pushId||'').trim();
-      if(pushId&&pendingPushClickAckPorts.has(pushId)){
-        const port=pendingPushClickAckPorts.get(pushId);
-        pendingPushClickAckPorts.delete(pushId);
-        try{port.postMessage({ok:true,pushId:pushId});}catch(err){}
-        try{port.close&&port.close();}catch(err){}
-      }
       clearPendingPushOpen_(pushId);
+      clearStoredPushClick_();
       cancelPendingPushRetries_();
       return;
     }
