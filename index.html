@@ -116,14 +116,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261003-1735-v108',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261003-1748-v109',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1735-v108';
+  const APP_IFRAME_BUILD='20261003-1748-v109';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -854,18 +854,22 @@ body{overflow:hidden}
     schedulePendingPushDelivery_();
   }
 
+  const pendingPushClickAckPorts=new Map();
+
   if('serviceWorker' in navigator){
     navigator.serviceWorker.addEventListener('message',function(event){
       const data=event&&event.data||{};
       if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK'){
+        const pushId=String(data.data&&data.data.pushId||'').trim();
         const port=(event.ports&&event.ports[0])||null;
-        receivePushClick_(data.data||{});
-        // Bevestig meteen dat de launcher de klik heeft ontvangen.
-        // De mobiele app verwerkt dezelfde melding daarna via de bestaande
-        // retry/ACK-route; zo hoeft de PWA niet opnieuw te laden.
-        if(port){
-          try{port.postMessage({ok:true,pushId:String(data.data&&data.data.pushId||'')});}catch(e){}
+        if(pushId&&port){
+          pendingPushClickAckPorts.set(pushId,port);
+          try{port.start&&port.start();}catch(e){}
         }
+        receivePushClick_(data.data||{});
+        // Belangrijk: nog GEEN bevestiging naar de serviceworker sturen.
+        // Pas wanneer de mobiele app de melding echt heeft geopend, sturen
+        // we de ACK terug. Anders zou de fallback te vroeg worden gestopt.
       }
     });
   }
@@ -1117,7 +1121,14 @@ body{overflow:hidden}
       return;
     }
     if(data.type==='SCHOONMAAK_NOTIFICATION_CLICK_ACK'){
-      clearPendingPushOpen_(String(data.pushId||''));
+      const pushId=String(data.pushId||'').trim();
+      if(pushId&&pendingPushClickAckPorts.has(pushId)){
+        const port=pendingPushClickAckPorts.get(pushId);
+        pendingPushClickAckPorts.delete(pushId);
+        try{port.postMessage({ok:true,pushId:pushId});}catch(err){}
+        try{port.close&&port.close();}catch(err){}
+      }
+      clearPendingPushOpen_(pushId);
       cancelPendingPushRetries_();
       return;
     }
