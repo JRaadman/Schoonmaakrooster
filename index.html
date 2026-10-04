@@ -21,7 +21,7 @@ html,body{height:100%;margin:0;background:var(--bg);font-family:-apple-system,Bl
 body{overflow:hidden}
 #splash{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:linear-gradient(180deg,#eef8f5 0%,#f7fbfa 100%);background-size:cover;background-position:center;background-repeat:no-repeat;transition:opacity .28s ease}
 #splash.hide{opacity:0;pointer-events:none}
-.card{width:min(410px,100%);background:rgba(255,248,238,.60);backdrop-filter:blur(1.7px);-webkit-backdrop-filter:blur(1.7px);border:1px solid rgba(255,255,255,.64);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.14)}
+.card{width:min(410px,100%);background:rgba(255,248,238,.43);backdrop-filter:blur(.7px);-webkit-backdrop-filter:blur(.7px);border:1px solid rgba(255,255,255,.64);border-radius:28px;padding:28px 24px 24px;text-align:center;box-shadow:0 14px 42px rgba(18,67,58,.14)}
 .logo{width:98px;height:98px;border-radius:23px;box-shadow:0 7px 20px rgba(0,0,0,.10)}
 .greeting{font-size:29px;font-weight:950;letter-spacing:-.4px;margin:18px 0 5px}
 .wish{font-size:16px;line-height:1.45;color:var(--muted);font-weight:650;margin:0 auto 14px;max-width:310px}
@@ -128,14 +128,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261004-1535-v114',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261004-1555-v115',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261004-1535-v114';
+  const APP_IFRAME_BUILD='20261004-1555-v115';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -510,7 +510,7 @@ body{overflow:hidden}
     const svg=backgroundSvgs[index];
     const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
     const splash=document.getElementById('splash');
-    splash.style.backgroundImage='linear-gradient(rgba(255,239,218,.16),rgba(255,247,232,.12)),url("'+url+'")';
+    splash.style.backgroundImage='linear-gradient(rgba(255,247,232,.025),rgba(255,247,232,.015)),url("'+url+'")';
   }
 
   const params=new URLSearchParams(location.search);
@@ -546,7 +546,7 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
-  const APP_VERSION='v114';
+  const APP_VERSION='v115';
   let appUpdateCheckBusy=false;
   let appUpdateAvailableBuild='';
   function appUpdateText_(){
