@@ -64,6 +64,12 @@ body{overflow:hidden}
 .notification-permission-actions button{border-radius:16px;min-height:56px;padding:12px 14px;font-size:16px;font-weight:900}
 #notificationPermissionCancel{background:#fff;border:1px solid #d9dfdd;color:#222}
 #notificationPermissionAllow{background:var(--green);border:0;color:#fff}
+#appUpdateBanner{position:fixed;z-index:520;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:none;justify-content:center;pointer-events:none}
+#appUpdateBanner.show{display:flex}
+.app-update-card{pointer-events:auto;width:min(560px,100%);display:flex;align-items:center;gap:10px;background:#173d36;color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:16px;padding:11px 12px;box-shadow:0 10px 28px rgba(0,0,0,.25)}
+.app-update-text{min-width:0;flex:1}.app-update-title{font-size:14px;font-weight:950;line-height:1.2}.app-update-sub{font-size:11px;opacity:.82;margin-top:2px}
+#appUpdateNow{flex:0 0 auto;border:0;border-radius:11px;background:#fff;color:#173d36;padding:10px 12px;font-size:12px;font-weight:950}
+#appUpdateNow:disabled{opacity:.55}
 </style>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
@@ -111,19 +117,25 @@ body{overflow:hidden}
     </div>
   </div>
 </div>
+<div id="appUpdateBanner" role="status" aria-live="polite">
+  <div class="app-update-card">
+    <div class="app-update-text"><div class="app-update-title" id="appUpdateTitle">Nieuwe appversie beschikbaar</div><div class="app-update-sub" id="appUpdateSub">Werk de app bij voor de nieuwste verbeteringen.</div></div>
+    <button id="appUpdateNow" type="button">Nu bijwerken</button>
+  </div>
+</div>
 <script>
 (function(){
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261003-1925-v112',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261004-1425-v113',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261003-1925-v112';
+  const APP_IFRAME_BUILD='20261004-1425-v113';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -508,6 +520,8 @@ body{overflow:hidden}
   const incomingPushTitle=String(params.get('pushTitle')||'');
   const incomingPushBody=String(params.get('pushBody')||'');
   const incomingPushDay=String(params.get('pushDay')||'');
+  const incomingPushAcc=String(params.get('pushAcc')||'');
+  const incomingPushKind=String(params.get('pushKind')||'');
   if(incoming){
     try{localStorage.setItem('schoonmaak_device',incoming);}catch(e){}
   }
@@ -520,16 +534,73 @@ body{overflow:hidden}
       title:incomingPushTitle,
       body:incomingPushBody,
       day:incomingPushDay,
+      acc:incomingPushAcc,
+      kind:incomingPushKind,
       _savedAt:Date.now()
     }));}catch(e){}
   }
-  if(incoming || incomingLang || incomingPushOpen){
+  if(incoming || incomingLang || incomingPushOpen || incomingPushAcc || incomingPushKind){
     history.replaceState({},'',location.pathname);
   }
 
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
+  const APP_VERSION='v113';
+  let appUpdateCheckBusy=false;
+  let appUpdateAvailableBuild='';
+  function appUpdateText_(){
+    const lang=getAppLang()||'nl';
+    const all={
+      nl:{title:'Nieuwe appversie beschikbaar',sub:'Werk de app bij voor de nieuwste verbeteringen.',button:'Nu bijwerken',busy:'Bijwerken…'},
+      en:{title:'New app version available',sub:'Update the app for the latest improvements.',button:'Update now',busy:'Updating…'},
+      es:{title:'Nueva versión disponible',sub:'Actualiza la app para obtener las últimas mejoras.',button:'Actualizar ahora',busy:'Actualizando…'},
+      de:{title:'Neue App-Version verfügbar',sub:'Aktualisiere die App für die neuesten Verbesserungen.',button:'Jetzt aktualisieren',busy:'Aktualisieren…'},
+      it:{title:'Nuova versione disponibile',sub:'Aggiorna l’app per avere gli ultimi miglioramenti.',button:'Aggiorna ora',busy:'Aggiornamento…'}
+    };
+    return all[lang]||all.nl;
+  }
+  function renderAppUpdateBanner_(){
+    const box=document.getElementById('appUpdateBanner');
+    if(!box)return;
+    const t=appUpdateText_();
+    const title=document.getElementById('appUpdateTitle');
+    const sub=document.getElementById('appUpdateSub');
+    const btn=document.getElementById('appUpdateNow');
+    if(title)title.textContent=t.title;
+    if(sub)sub.textContent=t.sub+(appUpdateAvailableBuild?' · '+appUpdateAvailableBuild:'');
+    if(btn&&!btn.disabled)btn.textContent=t.button;
+    box.classList.toggle('show',!!appUpdateAvailableBuild);
+  }
+  async function checkForAppUpdate_(){
+    if(appUpdateCheckBusy)return;
+    appUpdateCheckBusy=true;
+    try{
+      const res=await fetch('./version.json?ts='+Date.now(),{cache:'no-store'});
+      if(!res.ok)throw new Error('version-'+res.status);
+      const info=await res.json();
+      const remote=String(info&&info.build||'').trim();
+      appUpdateAvailableBuild=remote&&remote!==APP_IFRAME_BUILD?remote:'';
+      renderAppUpdateBanner_();
+    }catch(e){}
+    finally{appUpdateCheckBusy=false;}
+  }
+  async function activateLatestBuild_(){
+    const btn=document.getElementById('appUpdateNow');
+    const t=appUpdateText_();
+    if(btn){btn.disabled=true;btn.textContent=t.busy;}
+    try{
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.update().catch(()=>null)));
+      }
+    }catch(e){}
+    const u=new URL(location.href);
+    u.searchParams.set('v',String(Date.now()));
+    location.replace(u.toString());
+  }
+  document.getElementById('appUpdateNow')?.addEventListener('click',activateLatestBuild_);
+
   function getToken(){return getStored('schoonmaak_device');}
   function normalizeLang(lang){lang=String(lang||'').toLowerCase();return ['nl','en','es','de','it'].includes(lang)?lang:'';}
   function getAppLang(){return normalizeLang(getStored('schoonmaak_lang'));}
@@ -548,7 +619,9 @@ body{overflow:hidden}
       params.push('pushOpen='+encodeURIComponent(String(push.pushId||'')));
       if(String(push.title||''))params.push('pushTitle='+encodeURIComponent(String(push.title||'')));
       if(String(push.body||''))params.push('pushBody='+encodeURIComponent(String(push.body||'')));
-      if(String(push.day||''))params.push('pushDay='+encodeURIComponent(String(push.day||'')));
+      if(String(push.day||push.dayName||''))params.push('pushDay='+encodeURIComponent(String(push.day||push.dayName||'')));
+      if(String(push.acc||''))params.push('pushAcc='+encodeURIComponent(String(push.acc||'')));
+      if(String(push.kind||''))params.push('pushKind='+encodeURIComponent(String(push.kind||'')));
     }
     params.push('launcherBuild='+encodeURIComponent(APP_IFRAME_BUILD));
     return BASE+'?'+params.join('&');
@@ -583,6 +656,7 @@ body{overflow:hidden}
     document.getElementById('answerBtn').textContent=text.answer;
     document.getElementById('openBtn').textContent=text.open;
     document.querySelectorAll('.language-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.lang===lang));
+    renderAppUpdateBanner_();
   }
   function setPersonalSplash(name){
     const lang=getAppLang()||'nl';
@@ -1398,6 +1472,14 @@ body{overflow:hidden}
   if(loadPendingPushOpen_()&&String(loadPendingPushOpen_().pushId||'').trim()){
     setTimeout(function(){if(!started)startAppLoad();},120);
   }
+
+  // Bewust pas na de normale start: de versiecontrole mag de snelle appstart
+  // nooit blokkeren.
+  setTimeout(checkForAppUpdate_,4500);
+  setInterval(checkForAppUpdate_,15*60*1000);
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible')setTimeout(checkForAppUpdate_,700);
+  });
 })();
 </script>
 </body>
