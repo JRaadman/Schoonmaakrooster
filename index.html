@@ -508,7 +508,12 @@ body{overflow:hidden}
       }
     }catch(e){}
     const svg=backgroundSvgs[index];
-    const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
+    // Maak de illustratie bewust levendiger zonder tekst/kaart mee te verzadigen.
+    const vividSvg=svg.replace(/opacity="([0-9.]+)"/g,function(match,value){
+      const n=Number(value);if(!Number.isFinite(n))return match;
+      return 'opacity="'+Math.min(.92,n*1.55).toFixed(2)+'"';
+    });
+    const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(vividSvg);
     const splash=document.getElementById('splash');
     splash.style.backgroundImage='linear-gradient(rgba(255,247,232,.025),rgba(255,247,232,.015)),url("'+url+'")';
   }
