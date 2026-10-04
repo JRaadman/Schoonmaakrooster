@@ -60,7 +60,9 @@ self.addEventListener('notificationclick', event => {
       u.searchParams.set('pushOpen',pushId);
       if(String(data.title||''))u.searchParams.set('pushTitle',String(data.title||''));
       if(String(data.body||''))u.searchParams.set('pushBody',String(data.body||''));
-      if(String(data.day||''))u.searchParams.set('pushDay',String(data.day||''));
+      if(String(data.day||data.dayName||''))u.searchParams.set('pushDay',String(data.day||data.dayName||''));
+      if(String(data.acc||''))u.searchParams.set('pushAcc',String(data.acc||''));
+      if(String(data.kind||''))u.searchParams.set('pushKind',String(data.kind||''));
       targetUrl=u.href;
     }catch(e){}
   }
