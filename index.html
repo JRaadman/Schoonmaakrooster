@@ -488,31 +488,22 @@ body{overflow:hidden}
   ];
 
   function applyDailyBackground(day){
-    // Gebruik een duidelijk wisselend patroon en onthoud de keuze per kalenderdag.
-    // Zo kan iOS/PWA nooit per ongeluk de achtergrond van gisteren blijven tonen.
+    // v118: achtergrond is puur kalenderdag-gestuurd.
+    // Geen localStorage meer voor de keuze, zodat een oude PWA-cache nooit
+    // de achtergrond van gisteren kan vasthouden.
     const now=new Date();
-    const dateKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-    let index=(Number(day||0)*3)%backgroundSvgs.length;
-    try{
-      const savedDate=localStorage.getItem('schoonmaak_bg_date')||'';
-      const savedIndex=Number(localStorage.getItem('schoonmaak_bg_index'));
-      if(savedDate===dateKey && Number.isInteger(savedIndex) && savedIndex>=0 && savedIndex<backgroundSvgs.length){
-        index=savedIndex;
-      }else{
-        const previousIndex=Number(localStorage.getItem('schoonmaak_bg_index'));
-        if(Number.isInteger(previousIndex) && previousIndex===index){
-          index=(index+3)%backgroundSvgs.length;
-        }
-        localStorage.setItem('schoonmaak_bg_date',dateKey);
-        localStorage.setItem('schoonmaak_bg_index',String(index));
-      }
-    }catch(e){}
+    const year=now.getFullYear();
+    const startOfYear=new Date(year,0,0);
+    const dayOfYearNow=Math.floor((now-startOfYear)/(24*60*60*1000));
+    const index=((dayOfYearNow-1)%backgroundSvgs.length+backgroundSvgs.length)%backgroundSvgs.length;
     const svg=backgroundSvgs[index];
-    // Maak de illustratie bewust levendiger zonder tekst/kaart mee te verzadigen.
+
+    // Illustratie iets levendiger maken zonder de kaart/tekst te verzadigen.
     const vividSvg=svg.replace(/opacity="([0-9.]+)"/g,function(match,value){
       const n=Number(value);if(!Number.isFinite(n))return match;
       return 'opacity="'+Math.min(.92,n*1.55).toFixed(2)+'"';
     });
+
     const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(vividSvg);
     const splash=document.getElementById('splash');
     splash.style.backgroundImage='linear-gradient(rgba(255,247,232,.025),rgba(255,247,232,.015)),url("'+url+'")';
