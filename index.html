@@ -190,7 +190,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261006-1355-v120';
+  const APP_IFRAME_BUILD='20261006-1410-v121';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -655,7 +655,7 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
-  const APP_VERSION='v120';
+  const APP_VERSION='v121';
   let appUpdateCheckBusy=false;
   let appUpdateAvailableBuild='';
   function appUpdateText_(){
@@ -790,13 +790,7 @@ body{overflow:hidden}
   }
 
   setPersonalSplash('');
-  document.getElementById('holidayPreviewClose')?.addEventListener('click',function(){
-    holidayPreviewTheme_='';
-    const splash=document.getElementById('splash');
-    splash?.classList.remove('holiday-preview');
-    setPersonalSplash(getStored('schoonmaak_name'));
-    if(frame&&frame.classList.contains('ready'))splash?.classList.add('hide');
-  });
+  document.getElementById('holidayPreviewClose')?.addEventListener('click',closeHolidayPreview_);
 
   document.getElementById('answerBtn').addEventListener('click',function(){
     const a=document.getElementById('riddleA');
@@ -1215,12 +1209,45 @@ body{overflow:hidden}
     },20000);
   }
 
+  function closeHolidayPreview_(){
+    holidayPreviewTheme_='';
+    const splash=document.getElementById('splash');
+    splash?.classList.remove('holiday-preview');
+    setPersonalSplash(getStored('schoonmaak_name'));
+    if(frame&&frame.classList.contains('ready')){
+      splash?.classList.add('hide');
+      setTimeout(function(){splash.style.display='none';},300);
+    }
+  }
+
+  function openHolidayPreview_(theme){
+    const allowed=['valentine','easter','christmas','newyear','festive'];
+    holidayPreviewTheme_=allowed.includes(String(theme||'').toLowerCase())?String(theme).toLowerCase():'festive';
+    setPersonalSplash(getStored('schoonmaak_name'));
+    const splash=document.getElementById('splash');
+    splash.style.display='grid';
+    splash.classList.remove('hide');
+    splash.classList.add('holiday-preview');
+    if(loadingLine)loadingLine.style.display='none';
+    if(openBtn){
+      openBtn.style.display='block';
+      const lang=getAppLang()||'nl';
+      openBtn.textContent=lang==='en'?'Open schedule':lang==='es'?'Abrir horario':lang==='de'?'Plan öffnen':lang==='it'?'Apri turni':'Rooster openen';
+      openBtn.onclick=closeHolidayPreview_;
+    }
+  }
+
   function revealApp(name){
     if(name){setStored('schoonmaak_name',name);setPersonalSplash(name);}
     const minSplash=850;
     const wait=Math.max(0,minSplash-(Date.now()-startedAt));
     setTimeout(function(){
       frame.classList.add('ready');
+      if(holidayPreviewTheme_||splash.classList.contains('holiday-preview')){
+        splash.style.display='grid';
+        splash.classList.remove('hide');
+        return;
+      }
       splash.classList.add('hide');
       setTimeout(function(){splash.style.display='none';},300);
     },wait);
@@ -1429,20 +1456,11 @@ body{overflow:hidden}
   window.addEventListener('message',function(e){
     const data=e.data||{};
     if(data.type==='SCHOONMAAK_HOLIDAY_PREVIEW'){
-      const allowed=['valentine','easter','christmas','newyear','festive'];
-      holidayPreviewTheme_=allowed.includes(String(data.theme||'').toLowerCase())?String(data.theme).toLowerCase():'festive';
-      setPersonalSplash(getStored('schoonmaak_name'));
-      const splash=document.getElementById('splash');
-      splash?.classList.add('holiday-preview');
-      splash?.classList.remove('hide');
+      openHolidayPreview_(data.theme);
       return;
     }
     if(data.type==='SCHOONMAAK_HOLIDAY_PREVIEW_CLOSE'){
-      holidayPreviewTheme_='';
-      const splash=document.getElementById('splash');
-      splash?.classList.remove('holiday-preview');
-      setPersonalSplash(getStored('schoonmaak_name'));
-      if(frame&&frame.classList.contains('ready'))splash?.classList.add('hide');
+      closeHolidayPreview_();
       return;
     }
     if(data.type==='SCHOONMAAK_NOTIFICATION_STATUS_REQUEST'){
