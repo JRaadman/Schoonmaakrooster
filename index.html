@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#226b5f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Schoonmaakrooster">
+<meta name="apple-mobile-web-app-title" content="Capfun Het Winkel">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="app_icon_180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png">
@@ -88,6 +88,31 @@ body{overflow:hidden}
 #splash.holiday-preview #holidayPreviewClose{display:block}
 @keyframes holidaySplashFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(3deg)}}
 @media(prefers-reduced-motion:reduce){.holiday-splash-item{animation:none!important}}
+
+/* v120 · feestdagen extra rijk voor de echte beginpagina */
+#splash.holiday-splash{--ha:#226b5f;--hb:#f2d37d;--hc:#fff}
+#splash.holiday-splash .card{background:rgba(255,255,255,.64);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border-width:2px;box-shadow:0 20px 55px rgba(25,55,47,.19)}
+#splash.holiday-splash .logo{box-shadow:0 10px 28px rgba(0,0,0,.16)}
+#splash.holiday-splash .greeting{color:var(--ha);text-shadow:0 2px 10px rgba(255,255,255,.75)}
+#splash.holiday-splash .wish{font-size:18px;font-weight:850;color:#31423d}
+#splash.holiday-splash .riddle,#splash.holiday-splash .statement{background:rgba(255,255,255,.70);border-color:color-mix(in srgb,var(--ha) 22%,#fff)}
+#splash.holiday-splash .primary{background:linear-gradient(135deg,var(--ha),color-mix(in srgb,var(--ha) 67%,#fff));box-shadow:0 8px 22px color-mix(in srgb,var(--ha) 28%,transparent)}
+.holiday-splash-ribbon{position:absolute;left:-5%;right:-5%;z-index:1;text-align:center;white-space:nowrap;letter-spacing:9px;text-shadow:0 3px 8px rgba(0,0,0,.12)}
+.holiday-splash-ribbon.r1{top:calc(64px + env(safe-area-inset-top));font-size:27px;transform:rotate(-2deg)}
+.holiday-splash-ribbon.r2{bottom:5%;font-size:23px;transform:rotate(2deg);opacity:.82}
+.holiday-splash-item.i7{left:4%;top:62%;font-size:34px;animation-delay:-1.5s}.holiday-splash-item.i8{right:5%;top:65%;font-size:37px;animation-delay:-2.6s}
+.holiday-splash-item.i9{left:23%;top:5%;font-size:27px;animation-delay:-.6s}.holiday-splash-item.i10{right:23%;top:5%;font-size:29px;animation-delay:-3s}
+.holiday-splash-item.i11{left:24%;bottom:4%;font-size:27px;animation-delay:-1.9s}.holiday-splash-item.i12{right:24%;bottom:4%;font-size:29px;animation-delay:-.2s}
+#splash.holiday-valentine{--ha:#cf3f70;--hb:#ffafc9;--hc:#fff4f8}
+#splash.holiday-easter{--ha:#63a057;--hb:#f5d967;--hc:#f8fff4}
+#splash.holiday-christmas{--ha:#17693c;--hb:#d6b441;--hc:#f4fff7}
+#splash.holiday-newyear{--ha:#906c1f;--hb:#ecc85e;--hc:#fffaf0}
+#splash.holiday-festive{--ha:#7559b3;--hb:#efca62;--hc:#fffaf1}
+#splash.holiday-christmas .card{border-color:rgba(28,116,67,.46)}
+#splash.holiday-valentine .card{border-color:rgba(215,71,120,.43)}
+#splash.holiday-easter .card{border-color:rgba(99,160,87,.42)}
+#splash.holiday-newyear .card{border-color:rgba(144,108,31,.43)}
+@media(max-width:430px){.holiday-splash-ribbon.r1{font-size:22px;letter-spacing:5px}.holiday-splash-ribbon.r2{font-size:19px;letter-spacing:5px}}
 </style>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
@@ -95,9 +120,14 @@ body{overflow:hidden}
 <main id="splash">
   <div id="holidaySplashDecor" aria-hidden="true">
     <div class="holiday-splash-top" id="holidaySplashTop"></div>
+    <div class="holiday-splash-ribbon r1" id="holidaySplashRibbon1"></div>
+    <div class="holiday-splash-ribbon r2" id="holidaySplashRibbon2"></div>
     <span class="holiday-splash-item i1" id="holidaySplash1"></span><span class="holiday-splash-item i2" id="holidaySplash2"></span>
     <span class="holiday-splash-item i3" id="holidaySplash3"></span><span class="holiday-splash-item i4" id="holidaySplash4"></span>
     <span class="holiday-splash-item i5" id="holidaySplash5"></span><span class="holiday-splash-item i6" id="holidaySplash6"></span>
+    <span class="holiday-splash-item i7" id="holidaySplash7"></span><span class="holiday-splash-item i8" id="holidaySplash8"></span>
+    <span class="holiday-splash-item i9" id="holidaySplash9"></span><span class="holiday-splash-item i10" id="holidaySplash10"></span>
+    <span class="holiday-splash-item i11" id="holidaySplash11"></span><span class="holiday-splash-item i12" id="holidaySplash12"></span>
   </div>
   <button id="holidayPreviewClose" type="button">Terug naar app</button>
   <section class="card">
@@ -160,7 +190,7 @@ body{overflow:hidden}
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261006-1305-v119';
+  const APP_IFRAME_BUILD='20261006-1355-v120';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -553,12 +583,22 @@ body{overflow:hidden}
   }
   function launcherHolidayVisual_(theme){
     const all={
-      valentine:{top:'💗  ❤️  💕  ❤️  💗',items:['❤️','💕','💗','💘','❤️','💕']},
-      easter:{top:'🌷  🥚  🐣  🥚  🌷',items:['🐰','🥚','🐣','🌷','🥚','🐇']},
-      christmas:{top:'✨  🔴  🎄  🟡  🎄  🔴  ✨',items:['🎄','🔴','🎁','⭐','🟡','🎄']},
-      newyear:{top:'✨  🎆  ⭐  🥳  ⭐  🎇  ✨',items:['🎆','✨','🥳','🎇','⭐','🎉']},
-      festive:{top:'✨  🎉  ⭐  🎊  ✨',items:['🎉','✨','🎊','⭐','🥳','🎈']}
+      valentine:{top:'💗  ❤️  💕  ❤️  💗',r1:'💕  ❤️  💘  💗  ❤️  💕  💘',r2:'💗  💕  ❤️  💘  💕  ❤️',items:['❤️','💕','💗','💘','🌹','💝','💞','❤️','✨','💕','💗','🌹']},
+      easter:{top:'🌷  🥚  🐣  🥚  🌷',r1:'🌷  🥚  🐰  🌼  🐣  🥚  🌷',r2:'🥚  🌸  🐇  🌷  🐥  🥚',items:['🐰','🥚','🐣','🌷','🥚','🐇','🌼','🐥','🌸','🥚','🌷','🐰']},
+      christmas:{top:'✨  🔴  🎄  🟡  🎄  🔴  ✨',r1:'🎄  🔴  ⭐  🎁  🟡  🎄  🔔',r2:'✨  🎁  🎄  ⭐  🔴  🟡  ✨',items:['🎄','🎁','🔔','⭐','🎅','🦌','🔴','🟡','✨','🎄','🎁','❄️']},
+      newyear:{top:'✨  🎆  ⭐  🥳  ⭐  🎇  ✨',r1:'🎆  ✨  🎉  🥂  🎊  🎇  ⭐',r2:'🥳  🎉  ✨  🎊  🥂  🎆',items:['🎆','✨','🥳','🎇','⭐','🎉','🎊','🥂','✨','🎆','⭐','🎉']},
+      festive:{top:'✨  🎉  ⭐  🎊  ✨',r1:'🎉  ✨  🎈  ⭐  🎊  🥳',r2:'✨  🎊  🎉  🎈  ⭐',items:['🎉','✨','🎊','⭐','🥳','🎈','🎁','✨','🎉','🎊','⭐','🎈']}
     };return all[String(theme||'').toLowerCase()]||all.festive;
+  }
+  function launcherHolidayWish_(theme,lang){
+    const all={
+      valentine:{nl:'Fijne Valentijnsdag! ❤️ Maak er samen een liefdevolle en gezellige werkdag van.',en:'Happy Valentine’s Day! ❤️ Have a lovely working day together.',es:'¡Feliz San Valentín! ❤️ Que tengáis un día de trabajo lleno de buen ambiente.',de:'Schönen Valentinstag! ❤️ Habt gemeinsam einen liebevollen Arbeitstag.',it:'Buon San Valentino! ❤️ Vi auguriamo una giornata di lavoro piena di allegria.'},
+      easter:{nl:'Vrolijk Pasen! 🐣🌷 Maak er een gezellige en zonnige werkdag van.',en:'Happy Easter! 🐣🌷 Have a cheerful and sunny working day.',es:'¡Felices Pascuas! 🐣🌷 Que tengáis una jornada alegre y soleada.',de:'Frohe Ostern! 🐣🌷 Habt einen fröhlichen und sonnigen Arbeitstag.',it:'Buona Pasqua! 🐣🌷 Vi auguriamo una giornata allegra e luminosa.'},
+      christmas:{nl:'Fijne kerstdagen! 🎄✨ Wij wensen jullie een warme, gezellige werkdag toe.',en:'Merry Christmas! 🎄✨ We wish you a warm and cheerful working day.',es:'¡Feliz Navidad! 🎄✨ Os deseamos una jornada cálida y alegre.',de:'Frohe Weihnachten! 🎄✨ Wir wünschen euch einen warmen und fröhlichen Arbeitstag.',it:'Buon Natale! 🎄✨ Vi auguriamo una giornata calda e allegra.'},
+      newyear:{nl:'Fijne jaarwisseling! 🎆🥂 Maak er samen een feestelijke werkdag van.',en:'Happy New Year! 🎆🥂 Have a festive working day together.',es:'¡Feliz Año Nuevo! 🎆🥂 Que tengáis una jornada festiva juntos.',de:'Frohes neues Jahr! 🎆🥂 Habt gemeinsam einen festlichen Arbeitstag.',it:'Felice anno nuovo! 🎆🥂 Vi auguriamo una giornata di lavoro festosa.'},
+      festive:{nl:'Vandaag maken we er iets feestelijks van! 🎉✨',en:'Today we are making it festive! 🎉✨',es:'¡Hoy lo hacemos festivo! 🎉✨',de:'Heute wird es festlich! 🎉✨',it:'Oggi facciamo festa! 🎉✨'}
+    };
+    return (all[String(theme||'').toLowerCase()]||all.festive)[lang]||(all[String(theme||'').toLowerCase()]||all.festive).nl;
   }
   function applyLauncherHolidayTheme_(theme){
     const splash=document.getElementById('splash');
@@ -570,7 +610,16 @@ body{overflow:hidden}
     splash.classList.add('holiday-'+selected);
     const v=launcherHolidayVisual_(selected);
     const top=document.getElementById('holidaySplashTop');if(top)top.textContent=v.top;
+    const r1=document.getElementById('holidaySplashRibbon1'),r2=document.getElementById('holidaySplashRibbon2');if(r1)r1.textContent=v.r1;if(r2)r2.textContent=v.r2;
     v.items.forEach((x,i)=>{const n=document.getElementById('holidaySplash'+(i+1));if(n)n.textContent=x;});
+    const backgrounds={
+      valentine:'radial-gradient(circle at 18% 20%,rgba(255,134,178,.33),transparent 24%),radial-gradient(circle at 84% 32%,rgba(255,205,221,.40),transparent 28%),linear-gradient(180deg,#fff0f5 0%,#ffe2ec 47%,#fff7fa 100%)',
+      easter:'radial-gradient(circle at 17% 18%,rgba(255,225,102,.34),transparent 24%),radial-gradient(circle at 82% 31%,rgba(172,225,178,.34),transparent 26%),linear-gradient(180deg,#fffbe2 0%,#eef9df 52%,#f8fff6 100%)',
+      christmas:'radial-gradient(circle at 18% 20%,rgba(199,28,44,.23),transparent 22%),radial-gradient(circle at 84% 28%,rgba(25,124,67,.25),transparent 26%),radial-gradient(circle at 52% 7%,rgba(255,220,82,.30),transparent 20%),linear-gradient(180deg,#edf9f0 0%,#dfeee4 55%,#f7fff8 100%)',
+      newyear:'radial-gradient(circle at 17% 16%,rgba(255,207,63,.31),transparent 22%),radial-gradient(circle at 83% 27%,rgba(130,95,221,.24),transparent 25%),linear-gradient(180deg,#fff8d9 0%,#f7e6a5 52%,#fffaf0 100%)',
+      festive:'linear-gradient(180deg,#fff6df 0%,#f5edff 52%,#fffaf1 100%)'
+    };
+    splash.style.backgroundImage=backgrounds[selected]||backgrounds.festive;
   }
 
   const params=new URLSearchParams(location.search);
@@ -606,7 +655,7 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
-  const APP_VERSION='v119';
+  const APP_VERSION='v120';
   let appUpdateCheckBusy=false;
   let appUpdateAvailableBuild='';
   function appUpdateText_(){
@@ -732,6 +781,10 @@ body{overflow:hidden}
     document.getElementById('riddleA').textContent=prefix+r[1];
     document.getElementById('statementText').textContent=langStatements[day%langStatements.length];
     applyLauncherLanguage();
+    const activeHoliday=holidayPreviewTheme_||launcherHolidayThemeForDate_(new Date());
+    if(activeHoliday){
+      const wish=document.getElementById('wish');if(wish)wish.textContent=launcherHolidayWish_(activeHoliday,lang);
+    }
     const chooser=document.getElementById('languageChooser');
     if(chooser)chooser.classList.toggle('saved',getStored('schoonmaak_lang_picker_done')==='2');
   }
