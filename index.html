@@ -669,7 +669,7 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
-  const APP_VERSION='v120';
+  const APP_VERSION='v121';
   let appUpdateCheckBusy=false;
   let appUpdateAvailableBuild='';
   function appUpdateText_(){
@@ -703,7 +703,7 @@ body{overflow:hidden}
       if(!res.ok)throw new Error('version-'+res.status);
       const info=await res.json();
       const remote=String(info&&info.build||'').trim();
-      appUpdateAvailableBuild=remote&&remote!==APP_IFRAME_BUILD?remote:'';
+      appUpdateAvailableBuild=remote&&remote>APP_IFRAME_BUILD?remote:'';
       renderAppUpdateBanner_();
     }catch(e){}
     finally{appUpdateCheckBusy=false;}
