@@ -183,14 +183,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261005-1115-v117',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261008-1026-v121',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261006-1355-v120';
+  const APP_IFRAME_BUILD='20261008-1026-v121';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -543,25 +543,39 @@ body{overflow:hidden}
   ];
 
   function applyDailyBackground(day){
-    // v118: achtergrond is puur kalenderdag-gestuurd.
-    // Geen localStorage meer voor de keuze, zodat een oude PWA-cache nooit
-    // de achtergrond van gisteren kan vasthouden.
+    // v121: exact 10 duidelijk verschillende achtergronden, iedere kalenderdag
+    // de volgende. Geen localStorage: de datum bepaalt de keuze opnieuw bij elke start.
     const now=new Date();
-    const year=now.getFullYear();
-    const startOfYear=new Date(year,0,0);
-    const dayOfYearNow=Math.floor((now-startOfYear)/(24*60*60*1000));
-    const index=((dayOfYearNow-1)%backgroundSvgs.length+backgroundSvgs.length)%backgroundSvgs.length;
-    const svg=backgroundSvgs[index];
+    const start=new Date(now.getFullYear(),0,1);
+    const dayOfYear=Math.floor((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-
+      Date.UTC(start.getFullYear(),start.getMonth(),start.getDate()))/86400000);
+    const index=((dayOfYear%10)+10)%10;
+    const svg=backgroundSvgs[index%backgroundSvgs.length];
 
-    // Illustratie iets levendiger maken zonder de kaart/tekst te verzadigen.
+    // De illustraties zelf steviger van kleur maken.
     const vividSvg=svg.replace(/opacity="([0-9.]+)"/g,function(match,value){
       const n=Number(value);if(!Number.isFinite(n))return match;
-      return 'opacity="'+Math.min(.92,n*1.55).toFixed(2)+'"';
+      return 'opacity="'+Math.min(.98,n*2.15).toFixed(2)+'"';
     });
+
+    // Iedere dag daarnaast een duidelijk eigen kleurtint. Zo zijn opeenvolgende
+    // dagen ook op het eerste gezicht verschillend.
+    const overlays=[
+      'linear-gradient(150deg,rgba(255,197,92,.34),rgba(66,151,111,.18))',
+      'linear-gradient(150deg,rgba(255,137,120,.30),rgba(255,215,112,.20))',
+      'linear-gradient(150deg,rgba(90,186,164,.28),rgba(255,224,122,.22))',
+      'linear-gradient(150deg,rgba(91,164,214,.28),rgba(116,196,160,.20))',
+      'linear-gradient(150deg,rgba(230,128,159,.27),rgba(255,196,104,.20))',
+      'linear-gradient(150deg,rgba(87,176,130,.30),rgba(112,190,210,.18))',
+      'linear-gradient(150deg,rgba(202,139,91,.30),rgba(226,181,95,.22))',
+      'linear-gradient(150deg,rgba(111,187,149,.28),rgba(247,184,92,.18))',
+      'linear-gradient(150deg,rgba(84,175,190,.28),rgba(145,198,128,.18))',
+      'linear-gradient(150deg,rgba(111,138,199,.25),rgba(231,190,92,.20))'
+    ];
 
     const url='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(vividSvg);
     const splash=document.getElementById('splash');
-    splash.style.backgroundImage='linear-gradient(rgba(255,247,232,.025),rgba(255,247,232,.015)),url("'+url+'")';
+    splash.style.backgroundImage=overlays[index]+',url("'+url+'")';
   }
 
 
