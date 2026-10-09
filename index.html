@@ -10,9 +10,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Capfun Het Winkel">
-<link rel="manifest" href="manifest.webmanifest?v=20261009-0955-v123">
-<link rel="apple-touch-icon" sizes="180x180" href="app_icon_180.png?v=20261009-v123">
-<link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png?v=20261009-v123">
+<link rel="manifest" href="manifest.webmanifest?v=20261009-1115-v124">
+<link rel="apple-touch-icon" sizes="180x180" href="app_icon_180.png?v=20261009-v124">
+<link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png?v=20261009-v124">
 <title>Schoonmaakrooster</title>
 <style>
 :root{--green:#226b5f;--bg:#eef8f5;--text:#173d36;--muted:#627873;--line:#dce8e4}
@@ -131,7 +131,7 @@ body{overflow:hidden}
   </div>
   <button id="holidayPreviewClose" type="button">Terug naar app</button>
   <section class="card">
-    <img class="logo" src="app_icon_192.png?v=20261009-v123" alt="Capfun Het Winkel">
+    <img class="logo" src="app_icon_192.png?v=20261009-v124" alt="Capfun Het Winkel">
     <div class="greeting" id="greeting">Goedemorgen!</div>
     <div class="wish" id="wish">Wij wensen jou een fijne werkdag toe!</div>
     <div class="language-chooser" id="languageChooser">
@@ -183,14 +183,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261009-0955-v123',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261009-1115-v124',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261009-0955-v123';
+  const APP_IFRAME_BUILD='20261009-1115-v124';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -669,7 +669,7 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
-  const APP_VERSION='v123';
+  const APP_VERSION='v124';
   let appUpdateCheckBusy=false;
   let appUpdateAvailableBuild='';
   function appUpdateText_(){
@@ -1199,6 +1199,15 @@ body{overflow:hidden}
       setStartupStatus_(lang==='en'?'Loading schedule…':lang==='es'?'Cargando horario…':lang==='de'?'Plan wird geladen…':lang==='it'?'Caricamento turni…':'Rooster laden…');
     }
     if(loadPendingPushOpen_())schedulePendingPushDelivery_();
+
+    // Een vers geïnstalleerde PWA heeft nog geen telefoonkoppeling in de lokale opslag.
+    // In dat geval toont de Apps Script-iframe eerst het koppelscherm en komt
+    // SCHOONMAAK_READY pas NA koppelen. Laat daarom het iframe zelf direct zien.
+    if(!getToken() && !frame.classList.contains('ready')){
+      setTimeout(function(){
+        if(!frame.classList.contains('ready')) revealApp('');
+      },500);
+    }
   });
 
   function startAppLoad(){
@@ -1560,4 +1569,4 @@ body{overflow:hidden}
           navigator.serviceWorker.ready
             .then(reg=>reg.showNotification(title,{
               body:body,
-              icon:'./app_icon_192.png?v=20261009-v123
+              icon:'./app_icon_192.png?v=20261009-v124
