@@ -10,9 +10,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Capfun Het Winkel">
-<link rel="manifest" href="manifest.webmanifest?v=20261009-1120-v125">
-<link rel="apple-touch-icon" sizes="180x180" href="app_icon_180.png?v=20261009-v125">
-<link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png?v=20261009-v125">
+<link rel="manifest" href="manifest.webmanifest?v=20261009-0938-v122">
+<link rel="apple-touch-icon" sizes="180x180" href="app_icon_180.png?v=20261009-v122">
+<link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png?v=20261009-v122">
 <title>Schoonmaakrooster</title>
 <style>
 :root{--green:#226b5f;--bg:#eef8f5;--text:#173d36;--muted:#627873;--line:#dce8e4}
@@ -131,7 +131,7 @@ body{overflow:hidden}
   </div>
   <button id="holidayPreviewClose" type="button">Terug naar app</button>
   <section class="card">
-    <img class="logo" src="app_icon_192.png?v=20261009-v125" alt="Capfun Het Winkel">
+    <img class="logo" src="app_icon_192.png?v=20261009-v122" alt="Capfun Het Winkel">
     <div class="greeting" id="greeting">Goedemorgen!</div>
     <div class="wish" id="wish">Wij wensen jou een fijne werkdag toe!</div>
     <div class="language-chooser" id="languageChooser">
@@ -183,14 +183,14 @@ body{overflow:hidden}
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js?v=20261009-1120-v125',{updateViaCache:'none'}).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=20261009-0938-v122',{updateViaCache:'none'}).then(function(reg){
         try{reg.update();}catch(e){}
       }).catch(function(){});
     });
   }
 
   const BASE='https://script.google.com/macros/s/AKfycbyr7cBNe72YO6N9_cigunY-jKsNAEYy8klKuKY3HVkIPPAqQ032-CmlA2E8CGpp1TUx/exec';
-  const APP_IFRAME_BUILD='20261009-1120-v125';
+  const APP_IFRAME_BUILD='20261009-0938-v122';
   const riddles=[
     ['Wat wordt natter naarmate het droogt?','Een handdoek.'],
     ['Wat heeft tanden, maar kan niet bijten?','Een kam.'],
@@ -669,7 +669,7 @@ body{overflow:hidden}
   function getStored(key){try{return localStorage.getItem(key)||'';}catch(e){return '';}}
   function setStored(key,val){try{if(val)localStorage.setItem(key,val);}catch(e){}}
   function removeStored(key){try{localStorage.removeItem(key);}catch(e){}}
-  const APP_VERSION='v125';
+  const APP_VERSION='v122';
   let appUpdateCheckBusy=false;
   let appUpdateAvailableBuild='';
   function appUpdateText_(){
@@ -1199,22 +1199,6 @@ body{overflow:hidden}
       setStartupStatus_(lang==='en'?'Loading schedule…':lang==='es'?'Cargando horario…':lang==='de'?'Plan wird geladen…':lang==='it'?'Caricamento turni…':'Rooster laden…');
     }
     if(loadPendingPushOpen_())schedulePendingPushDelivery_();
-
-    // Een vers geïnstalleerde PWA heeft nog geen telefoonkoppeling in de lokale opslag.
-    // In dat geval toont de Apps Script-iframe eerst het koppelscherm en komt
-    // SCHOONMAAK_READY pas NA koppelen. Laat daarom het iframe zelf direct zien.
-    if(!getToken() && !frame.classList.contains('ready')){
-      setTimeout(function(){
-        if(!frame.classList.contains('ready')) revealApp('');
-      },500);
-    }
-
-    // iOS kan in standalone/PWA-modus het postMessage-signaal uit de
-    // Apps Script-iframe missen. De iframe zelf is dan al geladen, maar het
-    // voorblad blijft staan. Daarom tonen we de app na korte tijd alsnog.
-    setTimeout(function(){
-      if(!frame.classList.contains('ready')) revealApp('');
-    },2500);
   });
 
   function startAppLoad(){
@@ -1576,4 +1560,80 @@ body{overflow:hidden}
           navigator.serviceWorker.ready
             .then(reg=>reg.showNotification(title,{
               body:body,
-              icon:'./app_icon_192.png?v=20261009-v125
+              icon:'./app_icon_192.png?v=20261009-v122',
+              badge:'./app_icon_192.png?v=20261009-v122',
+              tag:String(data.tag||'schoonmaakrooster'),
+              renotify:true,
+              data:notifyData
+            }))
+            .then(()=>sendResult(true,''))
+            .catch(err=>sendResult(false,String(err&&err.message||err||'show-notification-failed')));
+        }
+      }catch(err){
+        sendResult(false,String(err&&err.message||err||'notification-failed'));
+      }
+      return;
+    }
+    if(data.type==='SCHOONMAAK_LANGUAGE'){
+      const lang=normalizeLang(data.language);
+      if(lang){
+        setStored('schoonmaak_lang',lang);
+        if(getPendingLang()===lang)removeStored('schoonmaak_lang_pending');
+        applyLauncherLanguage();
+        setPersonalSplash('');
+      }
+      return;
+    }
+    if(data.type==='SCHOONMAAK_READY'){
+      const lang=normalizeLang(data.language);
+      if(lang){
+        setStored('schoonmaak_lang',lang);
+        if(getPendingLang()===lang)removeStored('schoonmaak_lang_pending');
+        applyLauncherLanguage();
+      }
+      revealApp(String(data.name||''));
+      if(loadPendingPushOpen_())schedulePendingPushDelivery_();
+      return;
+    }
+    if(data.type==='SCHOONMAAK_ERROR'){
+      showLauncherError(data.message||'Het rooster kon niet worden geladen.');
+    }
+  });
+
+  const savedLang=getAppLang();
+  const needsLanguageChoice=getStored('schoonmaak_lang_picker_done')!=='2';
+
+  if(needsLanguageChoice){
+    // Eerste keer: eerst taal kiezen. Daarna verschijnt 'Rooster openen'.
+    loadingLine.style.display='none';
+    openBtn.style.display='none';
+    const chooser=document.getElementById('languageChooser');
+    if(chooser)chooser.classList.remove('saved');
+  }else if(savedLang){
+    applyLauncherLanguage();
+    const chooser=document.getElementById('languageChooser');
+    if(chooser)chooser.classList.add('saved');
+
+    // Ook vanuit het app-icoon niet automatisch doorstarten.
+    // Zo blijft er tijd voor het raadsel en de stelling.
+    showOpenRosterButton_();
+  }else{
+    loadingLine.style.display='none';
+    openBtn.style.display='none';
+  }
+
+  if(loadPendingPushOpen_()&&String(loadPendingPushOpen_().pushId||'').trim()){
+    setTimeout(function(){if(!started)startAppLoad();},120);
+  }
+
+  // Bewust pas na de normale start: de versiecontrole mag de snelle appstart
+  // nooit blokkeren.
+  setTimeout(checkForAppUpdate_,4500);
+  setInterval(checkForAppUpdate_,15*60*1000);
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible')setTimeout(checkForAppUpdate_,700);
+  });
+})();
+</script>
+</body>
+</html>
