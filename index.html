@@ -10,11 +10,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Capfun Het Winkel">
-<link rel="manifest" href="manifest.webmanifest?v=20261009-logo2">
-<link rel="apple-touch-icon" sizes="180x180" href="https://jraadman.github.io/Schoonmaakrooster/app_icon_180.png?v=20261009-ios1">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="https://jraadman.github.io/Schoonmaakrooster/app_icon_180.png?v=20261009-ios1">
-<link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png?v=20261009-logo2">
-<link rel="shortcut icon" type="image/png" href="app_icon_192.png?v=20261009-logo2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="app_icon_180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="app_icon_192.png">
 <title>Capfun Het Winkel</title>
 <style>
 :root{--green:#226b5f;--bg:#eef8f5;--text:#173d36;--muted:#627873;--line:#dce8e4}
@@ -158,7 +156,7 @@ body{overflow:hidden}
     </div>
     <div class="loading-line" id="loadingLine"><span class="spinner"></span><span>Rooster wordt klaargezet…</span></div>
     <button class="primary" id="openBtn" type="button">Rooster openen</button>
-    <div class="small">Capfun Het Winkel</div>
+    <button id="pwaInstallBtn" type="button" style="display:none;margin-top:12px">App installeren</button><div class="small">Capfun Het Winkel</div>
   </section>
 </main>
 <section id="appShell" aria-label="Schoonmaakrooster app">
@@ -1627,6 +1625,31 @@ body{overflow:hidden}
   if(loadPendingPushOpen_()&&String(loadPendingPushOpen_().pushId||'').trim()){
     setTimeout(function(){if(!started)startAppLoad();},120);
   }
+
+  let deferredPwaInstallPrompt=null;
+  const pwaInstallBtn=document.getElementById('pwaInstallBtn');
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    deferredPwaInstallPrompt=e;
+    if(pwaInstallBtn)pwaInstallBtn.style.display='block';
+  });
+  if(pwaInstallBtn){
+    pwaInstallBtn.addEventListener('click',async function(){
+      if(!deferredPwaInstallPrompt)return;
+      pwaInstallBtn.disabled=true;
+      try{
+        deferredPwaInstallPrompt.prompt();
+        await deferredPwaInstallPrompt.userChoice;
+      }catch(e){}
+      deferredPwaInstallPrompt=null;
+      pwaInstallBtn.style.display='none';
+      pwaInstallBtn.disabled=false;
+    });
+  }
+  window.addEventListener('appinstalled',function(){
+    deferredPwaInstallPrompt=null;
+    if(pwaInstallBtn)pwaInstallBtn.style.display='none';
+  });
 
   // Bewust pas na de normale start: de versiecontrole mag de snelle appstart
   // nooit blokkeren.
