@@ -112,8 +112,8 @@ self.addEventListener('message', event => {
   const title = String(data.title || 'Schoonmaakrooster');
   const options = {
     body: String(data.body || ''),
-    icon: './app_icon_192.png',
-    badge: './app_icon_192.png',
+    icon: './app_icon_192.png?v=20261009-v122',
+    badge: './app_icon_192.png?v=20261009-v122',
     tag: String(data.tag || 'schoonmaakrooster'),
     renotify: true,
     data: data.data || { url: './' }
