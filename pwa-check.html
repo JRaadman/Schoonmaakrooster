@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#226b5f">
+<link rel="manifest" href="./manifest.webmanifest?v=pwa-check-1">
+<link rel="icon" href="./app_icon_192.png?v=pwa-check-1" sizes="192x192" type="image/png">
+<title>PWA controle</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;margin:0;background:#f3f7f6;color:#173d36}
+main{max-width:680px;margin:auto;padding:20px}
+h1{font-size:28px;margin:0 0 8px}
+p{line-height:1.45}
+.card{background:#fff;border:1px solid #dce8e4;border-radius:18px;padding:16px;margin:14px 0}
+.row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:9px 0;border-bottom:1px solid #eef2f1}
+.row:last-child{border-bottom:0}
+.ok{color:#138a55;font-weight:800}.bad{color:#c33;font-weight:800}.wait{color:#956c00;font-weight:800}
+small,code{word-break:break-all}
+button{border:0;border-radius:14px;padding:13px 16px;background:#226b5f;color:#fff;font-weight:800;font-size:16px}
+pre{white-space:pre-wrap;word-break:break-word;background:#f6f8f8;padding:12px;border-radius:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>Installatiecontrole</h1>
+<p>Laat deze pagina ongeveer 15 seconden open. Maak daarna een screenshot van de hele uitslag.</p>
+<div class="card" id="rows"></div>
+<div class="card">
+<button id="installBtn" disabled>Installatieprompt testen</button>
+<p id="promptText">Wachten op Chrome...</p>
+</div>
+<div class="card"><strong>Browsergegevens</strong><pre id="ua"></pre></div>
+</main>
+<script>
+const rows=document.getElementById('rows');
+function add(name,status,detail){
+ const d=document.createElement('div');d.className='row';
+ const cls=status==='OK'?'ok':status==='FOUT'?'bad':'wait';
+ d.innerHTML='<div><strong>'+name+'</strong><br><small>'+String(detail||'')+'</small></div><div class="'+cls+'">'+status+'</div>';
+ rows.appendChild(d);
+}
+document.getElementById('ua').textContent=navigator.userAgent;
+add('HTTPS / veilige context',window.isSecureContext?'OK':'FOUT',location.href);
+add('Service worker ondersteund','serviceWorker' in navigator?'OK':'FOUT','serviceWorker' in navigator?'Ja':'Nee');
+add('Standalone actief',matchMedia('(display-mode: standalone)').matches?'OK':'NVT','Huidige weergavemodus');
+fetch('./manifest.webmanifest?v=pwa-check-1',{cache:'no-store'}).then(async r=>{
+ let j=null;try{j=await r.json()}catch(e){}
+ add('Manifest bereikbaar',r.ok?'OK':'FOUT','HTTP '+r.status);
+ if(j){
+   add('Manifest naam',j.name?'OK':'FOUT',j.name||'ontbreekt');
+   add('start_url',j.start_url?'OK':'FOUT',j.start_url||'ontbreekt');
+   add('display',j.display==='standalone'||j.display==='fullscreen'||j.display==='minimal-ui'?'OK':'FOUT',j.display||'ontbreekt');
+   const icons=Array.isArray(j.icons)?j.icons:[];
+   add('192 icoon',icons.some(x=>String(x.sizes||'').includes('192x192'))?'OK':'FOUT',icons.map(x=>x.sizes+': '+x.src).join(' | '));
+   add('512 icoon',icons.some(x=>String(x.sizes||'').includes('512x512'))?'OK':'FOUT',icons.map(x=>x.sizes+': '+x.src).join(' | '));
+ }
+}).catch(e=>add('Manifest bereikbaar','FOUT',String(e)));
+if('serviceWorker' in navigator){
+ navigator.serviceWorker.register('./sw.js?v=pwa-check-1',{updateViaCache:'none'}).then(async reg=>{
+   try{await reg.update()}catch(e){}
+   await navigator.serviceWorker.ready;
+   add('Service worker geregistreerd','OK',reg.scope);
+   add('Pagina onder SW-controle',navigator.serviceWorker.controller?'OK':'WACHT',navigator.serviceWorker.controller?navigator.serviceWorker.controller.scriptURL:'Nog geen controller; herlaad deze pagina 1x');
+ }).catch(e=>add('Service worker geregistreerd','FOUT',String(e)));
+}
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+ e.preventDefault();deferredPrompt=e;
+ document.getElementById('installBtn').disabled=false;
+ document.getElementById('promptText').textContent='Chrome ziet deze site als installeerbare app.';
+ add('beforeinstallprompt','OK','Chrome heeft de installatieprompt vrijgegeven');
+});
+document.getElementById('installBtn').onclick=async()=>{
+ if(!deferredPrompt)return;
+ deferredPrompt.prompt();
+ const r=await deferredPrompt.userChoice;
+ document.getElementById('promptText').textContent='Keuze: '+r.outcome;
+};
+setTimeout(()=>{
+ if(!deferredPrompt){
+   add('beforeinstallprompt','FOUT','Na 15 seconden geen installatieprompt ontvangen');
+   document.getElementById('promptText').textContent='Chrome geeft geen installatieprompt vrij.';
+ }
+},15000);
+</script>
+</body>
+</html>
