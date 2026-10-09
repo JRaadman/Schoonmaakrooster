@@ -1598,42 +1598,7 @@ body{overflow:hidden}
       return;
     }
     if(data.type==='SCHOONMAAK_ERROR'){
-      const message=String(data.message||'Het rooster kon niet worden geladen.');
-      const m=message.toLowerCase();
-
-      // Als een telefoon in Beheer is ontkoppeld, kan de launcher op hetzelfde
-      // toestel nog het oude device-token in localStorage hebben staan. Dan
-      // blijft de Apps Script-app terecht melden dat de koppeling niet meer
-      // bestaat. Ruim uitsluitend in dat geval het oude launcher-token op en
-      // laad het koppel-scherm opnieuw zonder device-token.
-      const staleDevice=
-        !!getToken() && (
-          m.includes('telefoonkoppeling bestaat niet meer') ||
-          m.includes('apparaatkoppeling is niet meer geldig') ||
-          m.includes('telefoonkoppeling ontbreekt') ||
-          m.includes('telefoon is niet gekoppeld')
-        );
-
-      if(staleDevice){
-        removeStored('schoonmaak_device');
-        removeStored('schoonmaak_name');
-        try{frame.classList.remove('ready');}catch(e){}
-        try{splash.classList.remove('hide');splash.style.display='flex';}catch(e){}
-        const lang=getAppLang()||'nl';
-        setStartupStatus_(
-          lang==='en'?'Phone link was removed. Opening setup…':
-          lang==='es'?'La vinculación del teléfono fue eliminada. Abriendo configuración…':
-          lang==='de'?'Die Telefonverknüpfung wurde entfernt. Einrichtung wird geöffnet…':
-          lang==='it'?'Il collegamento del telefono è stato rimosso. Apertura configurazione…':
-          'Telefoonkoppeling is verwijderd. Koppelscherm openen…'
-        );
-        setTimeout(function(){
-          frame.src=targetUrl()+'&relink='+Date.now();
-        },120);
-        return;
-      }
-
-      showLauncherError(message);
+      showLauncherError(data.message||'Het rooster kon niet worden geladen.');
     }
   });
 
