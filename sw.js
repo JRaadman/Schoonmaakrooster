@@ -121,3 +121,11 @@ self.addEventListener('message', event => {
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
+
+
+// PWA installability for older Android/Chrome versions.
+// Network-first passthrough: no caching, so app behavior stays unchanged.
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+  event.respondWith(fetch(event.request));
+});
